@@ -1,4 +1,4 @@
-streamlit
-streamlit_aggrid==1.55.0
+streamlit==1.55.0
+streamlit-aggrid
 matplotlib
 plotly
