@@ -28,22 +28,24 @@ def data_upload():
                                     "nbslct":"SELECTED INDIVIDUALS", 
                                     "total_finished":"INTERVIEWED INDIVIDUALS",
                                      "completed":"COMPLETED LQs"})
-          
+    
     return df_island, df_psu
+
+def total_hh_lq(df):
+    return df[df["ISLAND"]!="All"]["FILE1_STATUS"].sum(), df["COMPLETED LQs"].sum()
 
 
 df_island, df_psu = data_upload()
-
-total = df_island[df_island["ISLAND"]=="All"]["all_completed"].sum()
-
 df_island = df_island.drop(columns=["all_completed"])
+
+total_hh , total_lq  = total_hh_lq(df_island)
 
 # ---- ISLAND LEVEL TABLE SETUP ----#
 def build_tables(df, main=True):
     gd = GridOptionsBuilder.from_dataframe(df)
 
     # page or scrolling
-    pagination = True
+    pagination = main
     gd.configure_pagination(enabled=pagination)
 
     # Allow text filtering
@@ -75,7 +77,7 @@ def build_tables(df, main=True):
     grid_options = gd.build()
 
     max_rows_visible = min(10, max(len(df),3))
-    row_height = 55
+    row_height =  50
     header_height = 30
     
     height = header_height + (max_rows_visible * row_height)
@@ -121,7 +123,9 @@ if sel_row is not None:
     islands = sel_row["ISLAND"].tolist()
     
     df_filtered = df_psu[df_psu["ISLAND"].isin(islands)].copy()
+    df_filtered_is = df_island[df_island["ISLAND"].isin(islands)].copy()
     df_filtered = df_filtered.drop(columns=["ISLAND"])
+    total_hh, total_lq = total_hh_lq(df_filtered_is)
 
     grid_options_psu, height_psu = build_tables(df_filtered, False)
     custom_css_psu = { 
