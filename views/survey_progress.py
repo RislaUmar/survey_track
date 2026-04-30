@@ -7,8 +7,8 @@ import pandas as pd
 
 # ---- 1. DATA LOADING ----#
 #  Data file path
-island_data = "data/completion_island.dta"
-psu_data = "data/completion_psu.dta"
+island_data = "data/completion_island_all.dta"
+psu_data = "data/completion_psu_all.dta"
 
 # Page title
 st.title("HIES and TUS Progress")
@@ -18,12 +18,23 @@ st.title("HIES and TUS Progress")
 def data_upload():
     df_island = pd.read_stata(island_data)
     df_psu = pd.read_stata(psu_data)
+
+    df_island = df_island.rename(columns={"GHI_ISLAND_CODE": "ISLAND",
+                                          "nbslct":"SELECTED INDIVIDUALS", 
+                                          "total_finished":"INTERVIEWED INDIVIDUALS",
+                                          "completed":"COMPLETED LQs"})
+    df_psu = df_psu.rename(columns={"GHI_ISLAND_CODE": "ISLAND",
+                                    "block": "BLOCK",
+                                    "nbslct":"SELECTED INDIVIDUALS", 
+                                    "total_finished":"INTERVIEWED INDIVIDUALS",
+                                     "completed":"COMPLETED LQs"})
+          
     return df_island, df_psu
 
 
 df_island, df_psu = data_upload()
 
-total = df_island[df_island["GHI_ISLAND_CODE"]=="All"]["all_completed"].sum()
+total = df_island[df_island["ISLAND"]=="All"]["all_completed"].sum()
 
 df_island = df_island.drop(columns=["all_completed"])
 
@@ -36,8 +47,25 @@ def build_tables(df, main=True):
     gd.configure_pagination(enabled=pagination)
 
     # Allow text filtering
-    gd.configure_default_column(filter="agTextColumnFilter",sortable=True, resizable = True)
-
+    gd.configure_default_column(filter="agTextColumnFilter",
+                                sortable=True, 
+                                resizable = True,
+                                wrapHeaderText=True,
+                                autoHeaderHeight=True,
+                                headerStyle={'text-align': 'center'})
+    
+    for col in ["SELECTED INDIVIDUALS", "INTERVIEWED INDIVIDUALS", "COMPLETED LQs"]:
+        gd.configure_column(
+            col, 
+            cellStyle={"backgroundColor":"#e7f8d5"}, 
+            headerStyle={"backgroundColor":"#dcfbbb"}
+        )
+    for col in ["FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS"]:
+        gd.configure_column(
+            col, 
+            cellStyle={"backgroundColor":"#cae8f3"}, 
+            headerStyle={"backgroundColor":"#a1eefe"}
+        )
     # allow selection# select multiple or single
     if main:
         sel_mode = "multiple"
@@ -47,7 +75,7 @@ def build_tables(df, main=True):
     grid_options = gd.build()
 
     max_rows_visible = min(10, max(len(df),3))
-    row_height = 45
+    row_height = 55
     header_height = 30
     
     height = header_height + (max_rows_visible * row_height)
@@ -59,7 +87,10 @@ grid_options, height = build_tables(df_island)
 
 # custom css design
 custom_css = { 
-    ".ag-row-selected": { "background-color": "#FFCCCB" }, 
+    ".ag-row-selected .ag-cell": { "background-color": "#FFCCCB !important" }, 
+     ".ag-row-hover .ag-cell": {
+            "background-color": "#ffdadb !important",
+     },
     ".ag-root-wrapper": { "border": "2px solid gray !important" }, 
     ".ag-header": { "border-bottom": "2px solid gray !important", }, 
     ".ag-header-cell": { "border-left": "1px solid gray !important", }, 
@@ -71,13 +102,14 @@ custom_css = {
 left, center, right = st.columns([1, 4, 1])  # adjust ratios
     
 with center:
+    st.subheader("Island Summary")
     grid_table = AgGrid(
         df_island,
         gridOptions=grid_options,
         update_on=["selectionChanged"],
         allow_unsafe_jscode=True, 
         height=height,
-        fit_columns_on_grid_load=False,
+        fit_columns_on_grid_load=True,
         custom_css=custom_css
     )
 # selected rows
@@ -86,12 +118,12 @@ sel_row = grid_table["selected_rows"]
 # ---- PSU LEVEL TABLE SETUP ----#
 # allow blocks of selected islands to be shown
 if sel_row is not None:
-    islands = sel_row["GHI_ISLAND_CODE"].tolist()
+    islands = sel_row["ISLAND"].tolist()
     
-    df_filtered = df_psu[df_psu["GHI_ISLAND_CODE"].isin(islands)].copy()
-    df_filtered = df_filtered.drop(columns=["GHI_ISLAND_CODE", "interviewers"])
+    df_filtered = df_psu[df_psu["ISLAND"].isin(islands)].copy()
+    df_filtered = df_filtered.drop(columns=["ISLAND"])
 
-    grid_options_psu, height_psu = build_tables(df_filtered)
+    grid_options_psu, height_psu = build_tables(df_filtered, False)
     custom_css_psu = { 
         # borders
         ".ag-root-wrapper": { "border": "2px solid gray !important" }, 
@@ -104,15 +136,16 @@ if sel_row is not None:
             "background-color": "#fffff4", 
         },
         ".ag-root-wrapper": { "background-color": "#fffff4", "border": "2px solid black !important" },
-        ".ag-row-hover": {
-            "background-color": "#FFFFE0 !important",  # hover color
+        ".ag-row-hover .ag-cell": {
+            "background-color": "#F3F699 !important",
         },
-        ".ag-row-selected": { "background-color": "#F3F699" }, 
+        ".ag-row-selected .ag-cell": { "background-color": "#F3F699 !important" }, 
     }  
     
     left, center, right = st.columns([1, 4, 1])  # adjust ratios
     
     with center:
+        st.subheader("Block Summary")
         grid_table_block = AgGrid(
             df_filtered,
             gridOptions=grid_options_psu,
@@ -120,6 +153,5 @@ if sel_row is not None:
             allow_unsafe_jscode=True, 
             height=height_psu,
             fit_columns_on_grid_load=False,
-            custom_css=custom_css_psu,
-            width=75
+            custom_css=custom_css_psu
         )

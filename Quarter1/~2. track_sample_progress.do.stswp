@@ -66,14 +66,18 @@ foreach c of local codes {
 label values GHI_BLOCK_CODE block_lbl
 
 * order
-keep interviewers supervisor GHI_ISLAND_CODE PSU GHI_BLOCK_CODE
-order interviewers supervisor GHI_ISLAND_CODE PSU GHI_BLOCK_CODE
+keep interviewers supervisor GHI_ISLAND_CODE PSU GHI_BLOCK_CODE block
+order interviewers supervisor GHI_ISLAND_CODE PSU GHI_BLOCK_CODE block
 
 * save
 tempfile teams
 save `teams', replace
 erase "`DATA'"
 
+tempfile psu_block
+keep PSU block
+bysort PSU block : keep if _n == 1
+save `psu_block', replace
 /******************************************************************
  2. HOUSEHOLD DATA
 ******************************************************************/
@@ -249,17 +253,80 @@ gen TUS_STATUS = inlist(status_tus, 1)
 
 * summary data (island and block level)
 preserve
-gen all_completed = FILE1_STATUS > 0 & FILE2_STATUS > 0 & TUS_STATUS 
-collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS , by(GHI_ISLAND_CODE)
+gen all_completed = FILE1_STATUS > 0 & FILE2_STATUS > 0 & TUS_STATUS > 0
+collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS all_completed, by(GHI_ISLAND_CODE)
 save "${DIR_DATA_433FM_YQ}/completion_island.dta",replace
 restore
 
 preserve
-collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS , by(GHI_ISLAND_CODE PSU interviewers)
+collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS , by(GHI_ISLAND_CODE PSU)
 // merge 1:m PSU using `teams', keepusing("GHI_BLOCK_CODE")
 // assert _merge !=1
 // keep if inlist(_merge,1,3)
 // drop _merge
 save "${DIR_DATA_433FM_YQ}/completion_psu.dta", replace
 restore
+
+/******************************************************************
+ 3. LQ DATA
+******************************************************************/
+do "${DIR_PROG_433FM_YQ}3. lq_file_cleaning.do"
+
+use "${sample_file}", clear
+keep if lq_id != ""
+
+global IDENTIFYING LQ_ID GHI_STRUCTURE DWELLING_ID PSU GHI_ISLAND_CODE GHI_BLOCK_CODE
+
+keep if selection != 2
+
+rename lq_id LQ_ID
+keep $IDENTIFYING
+
+merge 1:1 LQ_ID using `"lq_file_cleaned.dta"'
+
+assert _merge == 3
+keep if _merge==3
+drop _merge
+
+erase "lq_file_cleaned.dta"
+
+save "${DIR_DATA_433FM_YQ}/progress_LQ.dta", replace
+
+merge m:1 GHI_BLOCK_CODE using `teams'
+assert _merge!=1
+keep if _merge == 3
+drop _merge
+
+preserve
+collapse (sum) nbslct total_finished completed , by(GHI_ISLAND_CODE)
+merge 1:1 GHI_ISLAND_CODE using "${DIR_DATA_433FM_YQ}/completion_island.dta", nogen
+
+local lq_vars nbslct total_finished completed
+
+foreach var of local lq_vars{
+	tostring `var', replace
+	replace `var' = "-" if missing(`var')
+}
+order `lq_vars' , last
+save "${DIR_DATA_433FM_YQ}/completion_island_all.dta",replace
+restore
+
+preserve
+collapse (sum) nbslct total_finished completed , by(GHI_ISLAND_CODE PSU)
+merge 1:1 GHI_ISLAND_CODE PSU using "${DIR_DATA_433FM_YQ}/completion_psu.dta", nogen
+local lq_vars nbslct total_finished completed
+
+foreach var of local lq_vars{
+	tostring `var', replace
+	replace `var' = "-" if missing(`var')
+}
+
+order `lq_vars' , last
+merge 1:1 PSU using `psu_block', keep(3) nogen
+drop PSU
+assert !missing(block)
+order block, after(GHI_ISLAND_CODE)
+save "${DIR_DATA_433FM_YQ}/completion_psu_all.dta",replace
+restore
+
 
