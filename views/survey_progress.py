@@ -7,8 +7,8 @@ import pandas as pd
 
 # ---- 1. DATA LOADING ----#
 #  Data file path
-island_data = r"\\fileserver\ICT&DM\DPDM\HIES\HIES2025\HIES_GSBPM\DATA\433_FIELDWORK_MONITORING\Quarter1\completion_island.dta"
-psu_data = r"\\fileserver\ICT&DM\DPDM\HIES\HIES2025\HIES_GSBPM\DATA\433_FIELDWORK_MONITORING\Quarter1\completion_psu.dta"
+island_data = "data/completion_island.dta"
+psu_data = r"data/completion_psu.dta"
 
 # Page title
 st.title("HIES and TUS Progress")

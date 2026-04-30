@@ -7,8 +7,8 @@ import pandas as pd
 
 st.title("Time Use Survey Summary")
 
-tus_s_data = r"\\fileserver\ICT&DM\DPDM\HIES\HIES2025\HIES_GSBPM\DATA\433_FIELDWORK_MONITORING\Quarter1\all_person_s.dta"
-tus_w_data = r"\\fileserver\ICT&DM\DPDM\HIES\HIES2025\HIES_GSBPM\DATA\433_FIELDWORK_MONITORING\Quarter1\all_weekday.dta"
+tus_s_data ="data//all_person_s.dta"
+tus_w_data = "data/all_weekday.dta"
 
 @st.cache_data
 def data_upload():
