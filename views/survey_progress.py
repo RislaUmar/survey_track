@@ -8,7 +8,7 @@ import pandas as pd
 # ---- 1. DATA LOADING ----#
 #  Data file path
 island_data = "data/completion_island.dta"
-psu_data = r"data/completion_psu.dta"
+psu_data = "data/completion_psu.dta"
 
 # Page title
 st.title("HIES and TUS Progress")
