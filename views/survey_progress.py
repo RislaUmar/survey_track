@@ -82,9 +82,8 @@ with center:
     )
 # selected rows
 sel_row = grid_table["selected_rows"]
-
-st.write("heelllo")
-
+st.dataframe(df_island)
+AgGrid(df_island)
 # ---- PSU LEVEL TABLE SETUP ----#
 # allow blocks of selected islands to be shown
 if sel_row is not None:
