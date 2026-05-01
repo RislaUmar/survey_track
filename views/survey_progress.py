@@ -111,7 +111,7 @@ with center:
         update_on=["selectionChanged"],
         allow_unsafe_jscode=True, 
         height=height,
-        fit_columns_on_grid_load=True,
+        # fit_columns_on_grid_load=True,
         custom_css=custom_css
     )
 # selected rows
