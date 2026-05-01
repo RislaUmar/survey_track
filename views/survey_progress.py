@@ -127,6 +127,24 @@ with center:
         theme="streamlit"
 )
 # selected rows
+st.subheader("Island Summary")
+grid_table = AgGrid(
+
+    df_island,
+
+    gridOptions=grid_options,
+
+    update_on=["selectionChanged"],
+
+    allow_unsafe_jscode=True,
+
+    height=height,
+
+    fit_columns_on_grid_load=False,
+
+    custom_css=custom_css,
+
+    theme="streamlit")
 sel_row = grid_table["selected_rows"]
 
 # ---- PSU LEVEL TABLE SETUP ----#
