@@ -44,43 +44,35 @@ total_hh , total_lq  = total_hh_lq(df_island)
 def build_tables(df, main=True):
     gd = GridOptionsBuilder.from_dataframe(df)
 
-    # page or scrolling
-    pagination = main
-    gd.configure_pagination(enabled=pagination)
+    gd.configure_pagination(enabled=main)
 
-    # Allow text filtering
-    gd.configure_default_column(filter="agTextColumnFilter",
-                                sortable=True, 
-                                resizable = True,
-                                wrapHeaderText=True,
-                                autoHeaderHeight=True,
-                                headerStyle={'text-align': 'center'})
-    
-    for col in ["SELECTED INDIVIDUALS", "INTERVIEWED INDIVIDUALS", "COMPLETED LQs"]:
-        gd.configure_column(
-            col, 
-            cellStyle={"backgroundColor":"#e7f8d5"}, 
-            headerStyle={"backgroundColor":"#dcfbbb"}
-        )
-    for col in ["FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS"]:
-        gd.configure_column(
-            col, 
-            cellStyle={"backgroundColor":"#cae8f3"}, 
-            headerStyle={"backgroundColor":"#a1eefe"}
-        )
-    # allow selection# select multiple or single
+    gd.configure_default_column(
+        filter="agTextColumnFilter",
+        sortable=True,
+        resizable=True,
+        wrapHeaderText=True,
+        autoHeaderHeight=True,
+        minWidth=120
+    )
+
+    for col in df.columns:
+        gd.configure_column(col, minWidth=120)
+
+    # optional: make first column sticky
+    if len(df.columns) > 0:
+        gd.configure_column(df.columns[0], pinned="left", minWidth=120)
+
     if main:
-        sel_mode = "multiple"
-        gd.configure_selection(selection_mode=sel_mode, use_checkbox=True)
+        gd.configure_selection(selection_mode="multiple", use_checkbox=True)
 
-    # Build grid table
     grid_options = gd.build()
 
-    max_rows_visible = min(10, max(len(df),3))
-    row_height =  50
-    header_height = 30
-    
-    height = header_height + (max_rows_visible * row_height)
+    grid_options["domLayout"] = "normal"
+    grid_options["suppressHorizontalScroll"] = False
+    grid_options["alwaysShowHorizontalScroll"] = True
+
+    max_rows_visible = min(10, max(len(df), 3))
+    height = 30 + max_rows_visible * 50
 
     return grid_options, height
 
@@ -106,14 +98,23 @@ left, center, right = st.columns([1, 4, 1])  # adjust ratios
 with center:
     st.subheader("Island Summary")
     grid_table = AgGrid(
+    
         df_island,
+    
         gridOptions=grid_options,
+    
         update_on=["selectionChanged"],
-        allow_unsafe_jscode=True, 
+    
+        allow_unsafe_jscode=True,
+    
         height=height,
-        # fit_columns_on_grid_load=True,
-        custom_css=custom_css
-    )
+    
+        fit_columns_on_grid_load=False,
+    
+        custom_css=custom_css,
+    
+        theme="streamlit"
+)
 # selected rows
 sel_row = grid_table["selected_rows"]
 
@@ -151,11 +152,19 @@ if sel_row is not None:
     with center:
         st.subheader("Block Summary")
         grid_table_block = AgGrid(
+    
             df_filtered,
+    
             gridOptions=grid_options_psu,
+    
             update_on=["selectionChanged"],
-            allow_unsafe_jscode=True, 
+    
+            allow_unsafe_jscode=True,
+    
             height=height_psu,
+    
             fit_columns_on_grid_load=False,
-            custom_css=custom_css_psu
-        )
+    
+            custom_css=custom_css_psu,
+            
+            theme="streamlit")
