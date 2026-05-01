@@ -104,29 +104,6 @@ custom_css = {
 }  
 
 # ISLAND LEVEL TABLE
-left, center, right = st.columns([1, 4, 1])  # adjust ratios
-    
-with center:
-    st.subheader("Island Summary")
-    grid_table = AgGrid(
-    
-        df_island,
-    
-        gridOptions=grid_options,
-    
-        update_on=["selectionChanged"],
-    
-        allow_unsafe_jscode=True,
-    
-        height=height,
-    
-        fit_columns_on_grid_load=False,
-    
-        custom_css=custom_css,
-    
-        theme="streamlit"
-)
-# selected rows
 st.subheader("Island Summary")
 grid_table = AgGrid(
 
@@ -145,6 +122,8 @@ grid_table = AgGrid(
     custom_css=custom_css,
 
     theme="streamlit")
+
+# selected rows
 sel_row = grid_table["selected_rows"]
 
 # ---- PSU LEVEL TABLE SETUP ----#
@@ -176,24 +155,21 @@ if sel_row is not None:
         ".ag-row-selected .ag-cell": { "background-color": "#F3F699 !important" }, 
     }  
     
-    left, center, right = st.columns([1, 4, 1])  # adjust ratios
-    
-    with center:
-        st.subheader("Block Summary")
-        grid_table_block = AgGrid(
-    
-            df_filtered,
-    
-            gridOptions=grid_options_psu,
-    
-            update_on=["selectionChanged"],
-    
-            allow_unsafe_jscode=True,
-    
-            height=height_psu,
-    
-            fit_columns_on_grid_load=False,
-    
-            custom_css=custom_css_psu,
-            
-            theme="streamlit")
+    st.subheader("Block Summary")
+    grid_table_block = AgGrid(
+
+        df_filtered,
+
+        gridOptions=grid_options_psu,
+
+        update_on=["selectionChanged"],
+
+        allow_unsafe_jscode=True,
+
+        height=height_psu,
+
+        fit_columns_on_grid_load=False,
+
+        custom_css=custom_css_psu,
+        
+        theme="streamlit")
