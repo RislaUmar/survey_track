@@ -61,7 +61,18 @@ def build_tables(df, main=True):
     # optional: make first column sticky
     if len(df.columns) > 0:
         gd.configure_column(df.columns[0], pinned="left", minWidth=120)
-
+    for col in ["SELECTED INDIVIDUALS", "INTERVIEWED INDIVIDUALS", "COMPLETED LQs"]:
+        gd.configure_column(
+            col, 
+            cellStyle={"backgroundColor":"#e7f8d5"}, 
+            headerStyle={"backgroundColor":"#dcfbbb"}
+        )
+    for col in ["FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS"]:
+        gd.configure_column(
+            col, 
+            cellStyle={"backgroundColor":"#cae8f3"}, 
+            headerStyle={"backgroundColor":"#a1eefe"}
+        )
     if main:
         gd.configure_selection(selection_mode="multiple", use_checkbox=True)
 
