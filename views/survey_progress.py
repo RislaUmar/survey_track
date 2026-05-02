@@ -1,128 +1,222 @@
 import streamlit as st
 from st_aggrid import AgGrid
 from st_aggrid.grid_options_builder import GridOptionsBuilder
-
-import matplotlib.pyplot as plt
+from st_aggrid.shared import JsCode
 import pandas as pd
 
-# ---- 1. DATA LOADING ----#
-#  Data file path
+# ---- DATA PATHS ----
 island_data = "data/completion_island_all.dta"
 psu_data = "data/completion_psu_all.dta"
 
-# Page title
 st.title("HIES and TUS Progress")
 
-# To read and cache loaded dataset
+
 @st.cache_data
 def data_upload():
     df_island = pd.read_stata(island_data)
     df_psu = pd.read_stata(psu_data)
 
-    df_island = df_island.rename(columns={"GHI_ISLAND_CODE": "ISLAND",
-                                          "nbslct":"SELECTED INDIVIDUALS", 
-                                          "total_finished":"INTERVIEWED INDIVIDUALS",
-                                          "completed":"COMPLETED LQs"})
-    df_psu = df_psu.rename(columns={"GHI_ISLAND_CODE": "ISLAND",
-                                    "block": "BLOCK",
-                                    "nbslct":"SELECTED INDIVIDUALS", 
-                                    "total_finished":"INTERVIEWED INDIVIDUALS",
-                                     "completed":"COMPLETED LQs"})
-    
-    return df_island, df_psu
+    df_island = df_island.rename(columns={
+        "GHI_ISLAND_CODE": "ISLAND",
+        "completed_HH": "COMPLETED HHs",
+        "completed_LQ": "COMPLETED LQs",
+        "target": "TARGET",
+        "completion_rate": "COMPLETION_RATE"
+    })
 
-def total_hh_lq(df):
-    return df[df["ISLAND"]!="All"]["FILE1_STATUS"].sum(), df["COMPLETED LQs"].sum()
+    df_island = df_island[
+        ["ISLAND", "COMPLETED HHs", "COMPLETED LQs", "TARGET", "COMPLETION_RATE"]
+    ]
+
+    df_psu = df_psu.rename(columns={
+        "GHI_ISLAND_CODE": "ISLAND",
+        "completed_HH": "COMPLETED HHs",
+        "block": "BLOCKS",
+        "nbslct": "SELECTED INDIVIDUALS",
+        "total_ind_finished": "INTERVIEWED INDIVIDUALS",
+        "completed_LQ": "COMPLETED LQs",
+        "target": "TARGET",
+        "completion_rate": "COMPLETION_RATE"
+    })
+
+    df_psu = df_psu[
+        [
+            "ISLAND", "BLOCKS", "COMPLETED HHs", "COMPLETED LQs", "TARGET", "COMPLETION_RATE",
+            "FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS",
+            "SELECTED INDIVIDUALS", "INTERVIEWED INDIVIDUALS"
+        ]
+    ]
+
+    for df in [df_island, df_psu]:
+        df["COMPLETION_RATE"] = pd.to_numeric(df["COMPLETION_RATE"], errors="coerce")
+        if df["COMPLETION_RATE"].max() <= 1:
+            df["COMPLETION_RATE"] = df["COMPLETION_RATE"] * 100
+
+    return df_island, df_psu
 
 
 df_island, df_psu = data_upload()
-df_island = df_island.drop(columns=["all_completed"])
 
-total_hh , total_lq  = total_hh_lq(df_island)
 
-# ---- ISLAND LEVEL TABLE SETUP ----#
-def build_tables(df, main=True):
-    gd = GridOptionsBuilder.from_dataframe(df)
+progress_renderer = JsCode("""
+class ProgressCellRenderer {
+    init(params) {
+        const value = Number(params.value) || 0;
 
-    gd.configure_pagination(enabled=main)
+        this.eGui = document.createElement('div');
+        this.eGui.style.width = '100%';
+        this.eGui.style.height = '20px';
+        this.eGui.style.background = '#eeeeee';
+        this.eGui.style.borderRadius = '10px';
+        this.eGui.style.overflow = 'hidden';
+        this.eGui.style.position = 'relative';
 
-    gd.configure_default_column(
-        filter="agTextColumnFilter",
+        const bar = document.createElement('div');
+        bar.style.height = '100%';
+        bar.style.width = value + '%';
+        bar.style.background = '#ff8a8a';
+        bar.style.borderRadius = '10px';
+
+        const label = document.createElement('span');
+        label.innerText = value.toFixed(0) + '%';
+        label.style.position = 'absolute';
+        label.style.left = '50%';
+        label.style.top = '50%';
+        label.style.transform = 'translate(-50%, -50%)';
+        label.style.fontSize = '12px';
+        label.style.fontWeight = '600';
+        label.style.color = 'black';
+
+        this.eGui.appendChild(bar);
+        this.eGui.appendChild(label);
+    }
+
+    getGui() {
+        return this.eGui;
+    }
+}
+""")
+
+
+def build_aggrid(df, main=True):
+    gb = GridOptionsBuilder.from_dataframe(df)
+
+    gb.configure_pagination(
+        enabled=main,
+        paginationAutoPageSize=False,
+        paginationPageSize=10
+    )
+
+    gb.configure_default_column(
+        filter=True,
         sortable=True,
         resizable=True,
         wrapHeaderText=True,
         autoHeaderHeight=True,
-        minWidth=120
+        minWidth=90,
+        cellStyle={
+            "textAlign": "center",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center"
+        }
     )
 
+    SMALL = 105
+    MEDIUM = 140
+    LARGE = 220
+
+    first_col = df.columns[0]
+
     for col in df.columns:
-        gd.configure_column(col, minWidth=120)
+        if col == first_col:
+            gb.configure_column(
+                col,
+                width=MEDIUM,
+                pinned="left",
+                cellStyle={
+                    "textAlign": "left",
+                    "display": "flex",
+                    "alignItems": "center",
+                    "justifyContent": "flex-start"
+                }
+            )
 
-    # optional: make first column sticky
-    if len(df.columns) > 0:
-        gd.configure_column(df.columns[0], pinned="left", minWidth=120)
-    for col in ["SELECTED INDIVIDUALS", "INTERVIEWED INDIVIDUALS", "COMPLETED LQs"]:
-        gd.configure_column(
-            col, 
-            cellStyle={"backgroundColor":"#e7f8d5"}, 
-            headerStyle={"backgroundColor":"#dcfbbb"}
-        )
-    for col in ["FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS"]:
-        gd.configure_column(
-            col, 
-            cellStyle={"backgroundColor":"#cae8f3"}, 
-            headerStyle={"backgroundColor":"#a1eefe"}
-        )
+        elif col == "COMPLETION_RATE":
+            gb.configure_column(
+                col,
+                header_name="COMPLETION",
+                cellRenderer=progress_renderer,
+                width=LARGE
+            )
+
+        elif col in ["COMPLETED HHs", "COMPLETED LQs", "TARGET"]:
+            gb.configure_column(col, width=SMALL)
+
+        elif col in ["FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS"]:
+            gb.configure_column(col, width=SMALL)
+
+        elif col in ["SELECTED INDIVIDUALS", "INTERVIEWED INDIVIDUALS"]:
+            gb.configure_column(col, width=SMALL)
+
     if main:
-        gd.configure_selection(selection_mode="multiple", use_checkbox=True)
+        gb.configure_selection(selection_mode="multiple", use_checkbox=True)
 
-    grid_options = gd.build()
+    grid_options = gb.build()
 
     grid_options["domLayout"] = "normal"
     grid_options["suppressHorizontalScroll"] = False
     grid_options["alwaysShowHorizontalScroll"] = True
 
-    max_rows_visible = min(10, max(len(df), 3))
-    height = 30 + max_rows_visible * 50
+    height = 80 + min(10, max(len(df), 3)) * 45
 
     return grid_options, height
 
-# generate grid configs
-grid_options, height = build_tables(df_island)
+custom_css = {
+    ".ag-row-selected .ag-cell": {
+        "background-color": "#FFCCCB !important"
+    },
+    ".ag-row-hover .ag-cell": {
+        "background-color": "#ffdadb !important"
+    },
+    ".ag-root-wrapper": {
+        "border": "2px solid gray !important"
+    },
+    ".ag-header": {
+        "border-bottom": "2px solid gray !important"
+    },
+    ".ag-header-cell": {
+        "border-left": "1px solid gray !important"
+    },
+    ".ag-header-cell-label": {
+        "justify-content": "center !important"
+    },
+    ".ag-cell": {
+        "border-left": "1px solid gray !important",
+        "border-bottom": "1px solid gray !important"
+    }
+}
 
-# custom css design
-custom_css = { 
-    ".ag-row-selected .ag-cell": { "background-color": "#FFCCCB !important" }, 
-     ".ag-row-hover .ag-cell": {
-            "background-color": "#ffdadb !important",
-     },
-    ".ag-root-wrapper": { "border": "2px solid gray !important" }, 
-    ".ag-header": { "border-bottom": "2px solid gray !important", }, 
-    ".ag-header-cell": { "border-left": "1px solid gray !important", }, 
-    ".ag-cell": { "border-left": "1px solid gray !important", 
-                "border-bottom": "1px solid gray !important", }
-}  
 
-# ISLAND LEVEL TABLE
+# ---- ISLAND SUMMARY ----
+
 st.subheader("Island Summary")
+
+island_grid_options, island_height = build_aggrid(df_island, main=True)
+
 grid_table = AgGrid(
-
     df_island,
-
-    gridOptions=grid_options,
-
+    gridOptions=island_grid_options,
     update_on=["selectionChanged"],
-
     allow_unsafe_jscode=True,
-
-    height=height,
-
+    height=island_height,
     fit_columns_on_grid_load=False,
-
     custom_css=custom_css,
+    theme="streamlit"
+)
 
-    theme="streamlit")
 
+# ---- PSU / REGION PROGRESS ----
 # selected rows
 sel_row = grid_table["selected_rows"]
 
@@ -134,42 +228,88 @@ if sel_row is not None:
     df_filtered = df_psu[df_psu["ISLAND"].isin(islands)].copy()
     df_filtered_is = df_island[df_island["ISLAND"].isin(islands)].copy()
     df_filtered = df_filtered.drop(columns=["ISLAND"])
-    total_hh, total_lq = total_hh_lq(df_filtered_is)
 
-    grid_options_psu, height_psu = build_tables(df_filtered, False)
-    custom_css_psu = { 
-        # borders
-        ".ag-root-wrapper": { "border": "2px solid gray !important" }, 
-        ".ag-header": { "border-bottom": "2px solid gray !important"}, 
-        ".ag-header-cell": { "border-left": "1px solid gray !important"}, 
-        ".ag-cell": { "border-left": "1px solid gray !important", "border-bottom": "1px solid gray !important", },
-        ".ag-header-cell": { "background-color": "#fffff4", "color": "black", "font-weight": "bold", }, 
-        ".ag-row": { "background-color": "#fffff4" }, 
-        ".ag-body-viewport": {
-            "background-color": "#fffff4", 
-        },
-        ".ag-root-wrapper": { "background-color": "#fffff4", "border": "2px solid black !important" },
-        ".ag-row-hover .ag-cell": {
-            "background-color": "#F3F699 !important",
-        },
-        ".ag-row-selected .ag-cell": { "background-color": "#F3F699 !important" }, 
-    }  
-    
-    st.subheader("Block Summary")
-    grid_table_block = AgGrid(
+    main_cols = ["BLOCKS", "COMPLETED HHs", "COMPLETED LQs", "TARGET", "COMPLETION_RATE"]
 
-        df_filtered,
 
-        gridOptions=grid_options_psu,
+        # ---- PSU / REGION PROGRESS ----
+    st.subheader("Progress by Region")
 
-        update_on=["selectionChanged"],
+    main_cols = ["BLOCKS", "COMPLETED HHs", "COMPLETED LQs", "TARGET", "COMPLETION_RATE"]
 
+    optional_cols = [
+        "FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS",
+        "SELECTED INDIVIDUALS", "INTERVIEWED INDIVIDUALS"
+    ]
+
+    df_psu_display = df_filtered[main_cols + optional_cols].copy()
+
+    df_psu_display["COMPLETION_RATE"] = pd.to_numeric(
+        df_psu_display["COMPLETION_RATE"],
+        errors="coerce"
+    )
+
+    if df_psu_display["COMPLETION_RATE"].max() <= 1:
+        df_psu_display["COMPLETION_RATE"] *= 100
+
+
+    psu_gb = GridOptionsBuilder.from_dataframe(df_psu_display)
+
+    psu_gb.configure_default_column(
+        filter=True,
+        sortable=True,
+        resizable=True,
+        wrapHeaderText=True,
+        autoHeaderHeight=True,
+        cellStyle={
+            "textAlign": "center",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center"
+        }
+    )
+
+    psu_gb.configure_column(
+        "BLOCKS",
+        width=120,
+        pinned="left",
+        cellStyle={
+            "textAlign": "left",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "flex-start"
+        }
+    )
+
+    psu_gb.configure_column("COMPLETED HHs", width=170)
+    psu_gb.configure_column("COMPLETED LQs", width=170)
+    psu_gb.configure_column("TARGET", width=170)
+
+    psu_gb.configure_column(
+        "COMPLETION_RATE",
+        header_name="COMPLETION",
+        width=300,
+        cellRenderer=progress_renderer
+    )
+
+    psu_gb.configure_column("FILE1_STATUS", width=170)
+    psu_gb.configure_column("FILE2_STATUS", width=170)
+    psu_gb.configure_column("TUS_STATUS", width=170)
+    psu_gb.configure_column("SELECTED INDIVIDUALS", width=170)
+    psu_gb.configure_column("INTERVIEWED INDIVIDUALS", width=170)
+
+    psu_grid_options = psu_gb.build()
+
+    psu_grid_options["domLayout"] = "normal"
+    psu_grid_options["suppressHorizontalScroll"] = False
+    psu_grid_options["alwaysShowHorizontalScroll"] = True
+
+    AgGrid(
+        df_psu_display,
+        gridOptions=psu_grid_options,
         allow_unsafe_jscode=True,
-
-        height=height_psu,
-
+        height=500,
         fit_columns_on_grid_load=False,
-
-        custom_css=custom_css_psu,
-        
-        theme="streamlit")
+        custom_css=custom_css,
+        theme="streamlit"
+    )

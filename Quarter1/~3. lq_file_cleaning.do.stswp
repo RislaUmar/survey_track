@@ -64,5 +64,5 @@ keep GHI_STRUCTURE DWELLING_ID LQ_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_COD
 bysort LQ_ID : keep if _n==1
 
 gen completed_LQ = nbslct == total_ind_finished
-assert nbslct >= total_ind_finished
+assert nbslct > total_ind_finished
 save "lq_file_cleaned.dta", replace

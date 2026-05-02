@@ -141,6 +141,16 @@ save `hies_file'
  MERGE WITH SMAPLE DATA
 ******************************************************************/
 use "${sample_file}", clear
+
+preserve
+tempfile targets
+bysort GHI_ISLAND_CODE: egen no_psus = nvals(PSU)
+bysort GHI_ISLAND_CODE no_psus : keep if _n==1
+gen target = no_psus * 1
+keep GHI_ISLAND_CODE target
+save `targets', replace
+restore
+
 keep if lq_id == ""
 
 global IDENTIFYING HOUSEHOLD_HD_ID HOUSEHOLD_KEY GHI_STRUCTURE DWELLING_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_CODE
@@ -179,15 +189,6 @@ order file1_status file2_status status_tus, last
 * create tus summaries
 * person sex
 preserve
-tempfile all
-keep if status_tus != 0
-gen n = 1
-collapse (count) n, by (TU_PERSON_SEX)
-gen GHI_ISLAND_CODE = "All"
-save `all', replace
-restore
-
-preserve
 tempfile all_pu_s
 keep if status_tus != 0
 gen n = 1
@@ -196,7 +197,6 @@ rename GHI_ISLAND_CODE isl
 decode isl, gen(GHI_ISLAND_CODE)
 drop isl
 
-append using `all'
 save "${DIR_DATA_433FM_YQ}/all_person_s.dta", replace
 restore
 
@@ -217,15 +217,6 @@ save `all_labels', replace
 restore
 
 preserve
-tempfile all
-keep if status_tus != 0
-gen n = 1
-collapse (count) n, by (TU_WDAY)
-gen GHI_ISLAND_CODE = "All"
-save `all', replace
-restore
-
-preserve
 tempfile all_pu_s
 keep if status_tus != 0
 gen n = 1
@@ -235,7 +226,6 @@ decode isl, gen(GHI_ISLAND_CODE)
 
 drop isl
 
-append using `all'
 replace TU_WDAY = trim(TU_WDAY)
 merge m:1 TU_WDAY using `all_labels', nogen
 save "${DIR_DATA_433FM_YQ}/all_weekday.dta", replace
@@ -253,23 +243,21 @@ gen TUS_STATUS = inlist(status_tus, 1)
 
 * summary data (island and block level)
 preserve
-gen all_completed = FILE1_STATUS > 0 & FILE2_STATUS > 0 & TUS_STATUS > 0
-collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS all_completed, by(GHI_ISLAND_CODE)
+gen completed_HH = FILE1_STATUS > 0 & FILE2_STATUS > 0 & TUS_STATUS > 0
+collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS completed_HH, by(GHI_ISLAND_CODE)
 save "${DIR_DATA_433FM_YQ}/completion_island.dta",replace
 restore
 
 preserve
-collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS , by(GHI_ISLAND_CODE PSU)
-// merge 1:m PSU using `teams', keepusing("GHI_BLOCK_CODE")
-// assert _merge !=1
-// keep if inlist(_merge,1,3)
-// drop _merge
+gen completed_HH = FILE1_STATUS > 0 & FILE2_STATUS > 0 & TUS_STATUS > 0
+collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS completed_HH, by(GHI_ISLAND_CODE PSU)
 save "${DIR_DATA_433FM_YQ}/completion_psu.dta", replace
 restore
 
 /******************************************************************
  3. LQ DATA
 ******************************************************************/
+* lq progress
 do "${DIR_PROG_433FM_YQ}3. lq_file_cleaning.do"
 
 use "${sample_file}", clear
@@ -284,7 +272,7 @@ keep $IDENTIFYING
 
 merge 1:1 LQ_ID using `"lq_file_cleaned.dta"'
 
-assert _merge == 3
+assert _merge != 2
 keep if _merge==3
 drop _merge
 
@@ -292,41 +280,54 @@ erase "lq_file_cleaned.dta"
 
 save "${DIR_DATA_433FM_YQ}/progress_LQ.dta", replace
 
+* get team information
 merge m:1 GHI_BLOCK_CODE using `teams'
 assert _merge!=1
 keep if _merge == 3
 drop _merge
 
+* totals for island level
 preserve
-collapse (sum) nbslct total_finished completed , by(GHI_ISLAND_CODE)
+collapse (sum) nbslct total_ind_finished completed_LQ , by(GHI_ISLAND_CODE)
 merge 1:1 GHI_ISLAND_CODE using "${DIR_DATA_433FM_YQ}/completion_island.dta", nogen
 
-local lq_vars nbslct total_finished completed
+local lq_vars nbslct completed_LQ total_ind_finished
 
 foreach var of local lq_vars{
-	tostring `var', replace
-	replace `var' = "-" if missing(`var')
+	replace `var' = 0 if missing(`var')
 }
 order `lq_vars' , last
+
+gen total_completed = completed_LQ + completed_HH
+merge 1:1 GHI_ISLAND_CODE using `targets', nogen
+gen completion_rate = (total_completed / target) * 100
+format completion_rate %9.2f
+order GHI_ISLAND_CODE total_completed target , first
 save "${DIR_DATA_433FM_YQ}/completion_island_all.dta",replace
 restore
 
+* totals for block level
 preserve
-collapse (sum) nbslct total_finished completed , by(GHI_ISLAND_CODE PSU)
+collapse (sum) nbslct completed_LQ total_ind_finished , by(GHI_ISLAND_CODE PSU)
 merge 1:1 GHI_ISLAND_CODE PSU using "${DIR_DATA_433FM_YQ}/completion_psu.dta", nogen
-local lq_vars nbslct total_finished completed
+local lq_vars nbslct completed_LQ total_ind_finished
 
 foreach var of local lq_vars{
-	tostring `var', replace
-	replace `var' = "-" if missing(`var')
+	replace `var' = 0 if missing(`var')
 }
 
+gen total_completed = completed_LQ + completed_HH
+gen target = 16
+gen completion_rate = (total_completed / target) * 100
+format completion_rate %9.2f
+
 order `lq_vars' , last
+order GHI_ISLAND_CODE
 merge 1:1 PSU using `psu_block', keep(3) nogen
 drop PSU
 assert !missing(block)
 order block, after(GHI_ISLAND_CODE)
+order GHI_ISLAND_CODE block total_completed target , first
+
 save "${DIR_DATA_433FM_YQ}/completion_psu_all.dta",replace
 restore
-
-

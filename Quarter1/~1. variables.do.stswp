@@ -34,7 +34,7 @@ foreach var of local months{
 	display "`sample_file'"
 	if fileexists("`sample_file'") {
 		use "`sample_file'", clear
-		tostring New_ID, replace
+		destring New_ID, replace
 		append using `sample_data'
 		save `sample_data', replace
     }
