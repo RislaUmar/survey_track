@@ -1,90 +1,90 @@
-import streamlit as st
-# from forms.contact import contact_form
-st.title("About", anchor=False)
-# @st.dialog("Cast your vote")
-# def show_contact_form():
-#     contact_form()
+# import streamlit as st
+# # from forms.contact import contact_form
+# st.title("About", anchor=False)
+# # @st.dialog("Cast your vote")
+# # def show_contact_form():
+# #     contact_form()
 
-# # creat columns
-# col1, col2 = st.columns(2, gap="small", vertical_alignment="center")
+# # # creat columns
+# # col1, col2 = st.columns(2, gap="small", vertical_alignment="center")
 
-# with col1:
-#     st.image("./assets/bunny.jpg", width=230)
-# with col2:
-#     st.title("Mr.Bunny", anchor=False)
-#     st.write("Just existing")
+# # with col1:
+# #     st.image("./assets/bunny.jpg", width=230)
+# # with col2:
+# #     st.title("Mr.Bunny", anchor=False)
+# #     st.write("Just existing")
 
-#     if st.button("✉️ Contact Me"):
-#         show_contact_form()
+# #     if st.button("✉️ Contact Me"):
+# #         show_contact_form()
 
-# st.write("\n")
-# st.subheader("Profession", anchor=False)
-# st.write("Gardening")
+# # st.write("\n")
+# # st.subheader("Profession", anchor=False)
+# # st.write("Gardening")
 
-# st.write("\n")
-# st.subheader("Favorite Food", anchor=False)
-# st.write("Carrots")
-import streamlit as st
-import pandas as pd
+# # st.write("\n")
+# # st.subheader("Favorite Food", anchor=False)
+# # st.write("Carrots")
+# import streamlit as st
+# import pandas as pd
 
-st.set_page_config(page_title="HIES Progress Dashboard", layout="wide")
+# st.set_page_config(page_title="HIES Progress Dashboard", layout="wide")
 
-TARGET_PER_REGION = 16
+# TARGET_PER_REGION = 16
 
-df = pd.DataFrame({
-    "Region": ["Region A", "Region B", "Region C", "Region D"],
-    "Completed": [4, 10, 16, 7],
-})
+# df = pd.DataFrame({
+#     "Region": ["Region A", "Region B", "Region C", "Region D"],
+#     "Completed": [4, 10, 16, 7],
+# })
 
-df["Target"] = TARGET_PER_REGION
-df["Progress"] = df["Completed"] / df["Target"]
-df["Progress Label"] = df["Completed"].astype(str) + " / " + df["Target"].astype(str)
-
-
-def color_region_by_progress(row):
-    progress = row["Progress"]
-
-    if progress < 0.40:
-        color = "#f8d7da"   # light red
-    elif progress < 0.75:
-        color = "#fff3cd"   # light yellow
-    else:
-        color = "#d4edda"   # light green
-
-    return [
-        f"background-color: {color}; font-weight: 600;"
-        if col == "Region"
-        else ""
-        for col in row.index
-    ]
+# df["Target"] = TARGET_PER_REGION
+# df["Progress"] = df["Completed"] / df["Target"]
+# df["Progress Label"] = df["Completed"].astype(str) + " / " + df["Target"].astype(str)
 
 
-styled_df = df.style.apply(color_region_by_progress, axis=1)
+# def color_region_by_progress(row):
+#     progress = row["Progress"]
 
-st.title("HIES Survey Progress")
+#     if progress < 0.40:
+#         color = "#f8d7da"   # light red
+#     elif progress < 0.75:
+#         color = "#fff3cd"   # light yellow
+#     else:
+#         color = "#d4edda"   # light green
 
-col1, col2, col3 = st.columns(3)
+#     return [
+#         f"background-color: {color}; font-weight: 600;"
+#         if col == "Region"
+#         else ""
+#         for col in row.index
+#     ]
 
-total_completed = df["Completed"].sum()
-total_target = df["Target"].sum()
-completion_rate = total_completed / total_target
 
-col1.metric("Households Completed", total_completed)
-col2.metric("Completion Rate", f"{completion_rate:.1%}")
-col3.metric("Remaining", total_target - total_completed)
+# styled_df = df.style.apply(color_region_by_progress, axis=1)
 
-st.subheader("Progress by Region")
+# st.title("HIES Survey Progress")
 
-st.dataframe(
-    styled_df,
-    use_container_width=True,
-    hide_index=True,
-    column_config={
-        "Progress": st.column_config.ProgressColumn(
-            "Completion",
-            min_value=0,
-            max_value=1,
-            format="%.0f%%",
-        )
-    },
-)
+# col1, col2, col3 = st.columns(3)
+
+# total_completed = df["Completed"].sum()
+# total_target = df["Target"].sum()
+# completion_rate = total_completed / total_target
+
+# col1.metric("Households Completed", total_completed)
+# col2.metric("Completion Rate", f"{completion_rate:.1%}")
+# col3.metric("Remaining", total_target - total_completed)
+
+# st.subheader("Progress by Region")
+
+# st.dataframe(
+#     styled_df,
+#     use_container_width=True,
+#     hide_index=True,
+#     column_config={
+#         "Progress": st.column_config.ProgressColumn(
+#             "Completion",
+#             min_value=0,
+#             max_value=1,
+#             format="%.0f%%",
+#         )
+#     },
+# )
