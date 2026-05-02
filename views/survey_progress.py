@@ -458,39 +458,46 @@ def responsive_grid_js(optional_columns=None, first_column=None):
     return JsCode(
         f"""
         function(params) {{
+            function safeWidth(colId, width) {{
+                try {{
+                    if (params.columnApi && params.columnApi.setColumnWidth) {{
+                        params.columnApi.setColumnWidth(colId, width);
+                    }}
+                }} catch(e) {{}}
+            }}
+
             function applyResponsiveLayout() {{
                 const isMobile = window.innerWidth < 768;
                 const optionalCols = {optional_columns};
                 const firstCol = "{first_column}";
 
-                if (params.columnApi && params.columnApi.applyColumnState) {{
+                // On mobile, do NOT hide columns. Keep every column visible and allow horizontal scroll.
+                if (params.columnApi && params.columnApi.setColumnsVisible && optionalCols.length > 0) {{
+                    params.columnApi.setColumnsVisible(optionalCols, true);
+                }} else if (params.api && params.api.setColumnsVisible && optionalCols.length > 0) {{
+                    params.api.setColumnsVisible(optionalCols, true);
+                }}
+
+                // Pinned columns are awkward on phones; unpin only on mobile.
+                if (params.columnApi && params.columnApi.applyColumnState && firstCol) {{
                     params.columnApi.applyColumnState({{
                         state: [{{ colId: firstCol, pinned: isMobile ? null : 'left' }}],
                         applyOrder: false
                     }});
                 }}
 
-                if (params.columnApi && params.columnApi.setColumnsVisible && optionalCols.length > 0) {{
-                    params.columnApi.setColumnsVisible(optionalCols, !isMobile);
-                }} else if (params.api && params.api.setColumnsVisible && optionalCols.length > 0) {{
-                    params.api.setColumnsVisible(optionalCols, !isMobile);
-                }}
-
                 if (isMobile) {{
-                    if (params.columnApi && params.columnApi.setColumnWidth) {{
-                        if (firstCol) params.columnApi.setColumnWidth(firstCol, 90);
-                        params.columnApi.setColumnWidth('COMPLETION_RATE', 145);
-                        ['COMPLETED HHs', 'COMPLETED LQs', 'TARGET'].forEach(c => {{
-                            try {{ params.columnApi.setColumnWidth(c, 82); }} catch(e) {{}}
-                        }});
-                    }}
+                    if (firstCol) safeWidth(firstCol, 95);
+                    safeWidth('COMPLETED HHs', 95);
+                    safeWidth('COMPLETED LQs', 95);
+                    safeWidth('TARGET', 85);
+                    safeWidth('COMPLETION_RATE', 155);
+                    safeWidth('FILE1_STATUS', 105);
+                    safeWidth('FILE2_STATUS', 105);
+                    safeWidth('TUS_STATUS', 105);
+                    safeWidth('SELECTED INDIVIDUALS', 125);
+                    safeWidth('INTERVIEWED INDIVIDUALS', 130);
                 }}
-
-                setTimeout(function() {{
-                    if (params.api && params.api.sizeColumnsToFit && isMobile) {{
-                        try {{ params.api.sizeColumnsToFit(); }} catch(e) {{}}
-                    }}
-                }}, 100);
             }}
 
             applyResponsiveLayout();
@@ -498,7 +505,6 @@ def responsive_grid_js(optional_columns=None, first_column=None):
         }}
         """
     )
-
 
 def build_aggrid(df, main=True):
     gb = GridOptionsBuilder.from_dataframe(df)
@@ -568,7 +574,7 @@ def build_aggrid(df, main=True):
     grid_options = gb.build()
     grid_options["domLayout"] = "normal"
     grid_options["suppressHorizontalScroll"] = False
-    grid_options["alwaysShowHorizontalScroll"] = False
+    grid_options["alwaysShowHorizontalScroll"] = True
     grid_options["onGridReady"] = responsive_grid_js(first_column=first_col)
     grid_options["onGridSizeChanged"] = responsive_grid_js(first_column=first_col)
 
@@ -683,7 +689,7 @@ if sel_row is not None:
     psu_grid_options = psu_gb.build()
     psu_grid_options["domLayout"] = "normal"
     psu_grid_options["suppressHorizontalScroll"] = False
-    psu_grid_options["alwaysShowHorizontalScroll"] = False
+    psu_grid_options["alwaysShowHorizontalScroll"] = True
     psu_grid_options["onGridReady"] = responsive_grid_js(
         optional_columns=optional_cols,
         first_column="BLOCKS",
