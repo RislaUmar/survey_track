@@ -34,7 +34,7 @@ pg = st.navigation(
 # Shared on all pages
 # st.logo("assets/logo.jpg")
 
-st.sidebar.caption("HIES2026")
+# st.sidebar.caption("HIES2026")
 
 # Run Navigation
 pg.run()
