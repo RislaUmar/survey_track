@@ -233,9 +233,9 @@ if selected_rows:
         column_config={
             "BLOCKS": st.column_config.TextColumn(width="small"),
 
-            "COMPLETED HHs": st.column_config.NumberColumn(format="%d", width="small"),
-            "COMPLETED LQs": st.column_config.NumberColumn(format="%d", width="small"),
-            "TARGET": st.column_config.NumberColumn(format="%d", width="small"),
+            "COMPLETED HHs": st.column_config.NumberColumn(format="%d"),
+            "COMPLETED LQs": st.column_config.NumberColumn(format="%d"),
+            "TARGET": st.column_config.NumberColumn(format="%d"),
 
             "COMPLETION_RATE": st.column_config.ProgressColumn(
                 "COMPLETION",
@@ -245,14 +245,14 @@ if selected_rows:
                 width="large", 
             ),
 
-            "FILE1_STATUS": st.column_config.NumberColumn(format="%d", width="small"),
-            "FILE2_STATUS": st.column_config.NumberColumn(format="%d", width="small"),
-            "TUS_STATUS": st.column_config.NumberColumn(format="%d", width="small"),
+            "FILE1_STATUS": st.column_config.NumberColumn(format="%d"),
+            "FILE2_STATUS": st.column_config.NumberColumn(format="%d"),
+            "TUS_STATUS": st.column_config.NumberColumn(format="%d"),
             
             "INTERVIEWED LQ INDIVIDUALS": st.column_config.NumberColumn(
                 "INTERVIEWED LQ\n INDIVIDUALS",
                     format="%d",
-                    width="medium",
+                    # width="medium",
                 ),
         },
         use_container_width=True,
