@@ -282,20 +282,24 @@ erase "lq_file_cleaned.dta"
 
 save "${DIR_DATA_433FM_YQ}/progress_LQ.dta", replace
 
-preserve
-append using "${DIR_DATA_433FM_YQ}/progress.dta"
-order GHI_ISLAND_CODE PSU GHI_BLOCK_CODE block GHI_STRUCTURE DWELLING_ID SELECTION  HOUSEHOLD_HD_ID HOUSEHOLD_KEY LQ_ID file1_status file2_status status_tus completed_LQ nbslct total_ind_finished PERSON_NAME PERSON_AGE PERSON_SEX interviewers supervisor
 
-merge m:1 PSU using `psu_block', keep(3) keepusing(PSU block) nogen
-
-save "${DIR_DATA_433FM_YQ}/progress_all.dta" , replace
-restore
 
 * get team information
 merge m:1 GHI_BLOCK_CODE using `teams'
 assert _merge!=1
 keep if _merge == 3
 drop _merge
+
+preserve
+append using "${DIR_DATA_433FM_YQ}/progress.dta"
+order GHI_ISLAND_CODE PSU GHI_BLOCK_CODE block GHI_STRUCTURE DWELLING_ID SELECTION  HOUSEHOLD_HD_ID HOUSEHOLD_KEY LQ_ID file1_status file2_status status_tus completed_LQ nbslct total_ind_finished PERSON_NAME PERSON_AGE PERSON_SEX interviewers supervisor
+
+label define lq_status 0 "Incomplete" 1 "Complete"
+label values 
+merge m:1 PSU using `psu_block', keep(3) keepusing(PSU block) nogen
+
+save "${DIR_DATA_433FM_YQ}/progress_all.dta" , replace
+restore
 
 * totals for island level
 preserve

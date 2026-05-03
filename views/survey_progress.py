@@ -70,7 +70,9 @@ def data_upload():
         "PERSON_AGE":"TUS_PERSON_AGE",
         "PERSON_SEX":"TUS_PERSON_SEX"
     })
-
+    
+    df_sample["LQ_STATUS"] = df_sample["LQ_STATUS"].map({1: "Complete", 0: "Incomplete"}).fillna(df_sample["LQ_STATUS"])
+    df_sample = df_sample.sort_values(by="LQ_ID")
     df_sample = df_sample[["ISLAND", "BLOCKS",
                            "HOUSEHOLD_HD_ID", "HOUSEHOLD_KEY", "LQ_ID",
                            "FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS", "LQ_STATUS",
