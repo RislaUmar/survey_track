@@ -252,7 +252,7 @@ if selected_rows:
             "INTERVIEWED LQ INDIVIDUALS": st.column_config.NumberColumn(
                 "INTERVIEWED LQ\n INDIVIDUALS",
                     format="%d",
-                    width="small",
+                    width="medium",
                 ),
         },
         use_container_width=True,
