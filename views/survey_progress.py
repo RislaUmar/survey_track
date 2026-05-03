@@ -208,6 +208,7 @@ if selected_rows:
         </div>
         """
 
+    # with st.expander("Show Supervisor Legend",  expanded=True):
     with st.expander("Show Supervisor Legend"):
         st.markdown(legend_html, unsafe_allow_html=True)
     
@@ -262,6 +263,7 @@ if selected_rows:
     )
 
     
+    st.info("🔴 Red TUS cells = TUS form does not match HIES forms. Select a block to view details.")
     selected_block_rows = blocks_event.selection.rows
     if selected_block_rows:
         blocks = df_psu_display.iloc[selected_block_rows]["BLOCKS"].tolist()

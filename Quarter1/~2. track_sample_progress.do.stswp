@@ -154,7 +154,7 @@ restore
 
 keep if lq_id == ""
 
-global IDENTIFYING HOUSEHOLD_HD_ID HOUSEHOLD_KEY GHI_STRUCTURE DWELLING_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_CODE
+global IDENTIFYING QUARTER HOUSEHOLD_HD_ID HOUSEHOLD_KEY GHI_STRUCTURE DWELLING_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_CODE
 
 gen HOUSEHOLD_KEY = regexs(1) if regexm(HOUSEHOLD_HD_ID,"\((.*)\)")
 
@@ -286,7 +286,7 @@ preserve
 append using "${DIR_DATA_433FM_YQ}/progress.dta"
 order GHI_ISLAND_CODE PSU GHI_BLOCK_CODE block GHI_STRUCTURE DWELLING_ID SELECTION  HOUSEHOLD_HD_ID HOUSEHOLD_KEY LQ_ID file1_status file2_status status_tus completed_LQ nbslct total_ind_finished PERSON_NAME PERSON_AGE PERSON_SEX interviewers supervisor
 
-merge 1:1 PSU using `psu_block', keep(3) keepusing(PSU block) nogen
+merge m:1 PSU using `psu_block', keep(3) keepusing(PSU block) nogen
 
 save "${DIR_DATA_433FM_YQ}/progress_all.dta" , replace
 restore
