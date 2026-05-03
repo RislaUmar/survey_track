@@ -88,3 +88,42 @@
 #         )
 #     },
 # )
+import streamlit as st
+import pandas as pd
+
+df = pd.DataFrame({
+    "task": ["A", "B", "C"],
+    "progress": [20, 65, 90],
+    "owner": ["Sam", "Riya", "Leo"]
+})
+
+event = st.dataframe(
+    df,
+    column_config={
+        "progress": st.column_config.ProgressColumn(
+            "Progress",
+            min_value=0,
+            max_value=100,
+            format="%d%%",
+        )
+    },
+    hide_index=True,
+    use_container_width=True,
+    on_select="rerun",
+    selection_mode="single-row",
+)
+
+selected_rows = event.selection.rows
+
+if selected_rows:
+    selected = df.iloc[selected_rows[0]]
+
+    st.subheader(f"Selected: {selected['task']}")
+    st.write("Owner:", selected["owner"])
+    st.write("Progress:", selected["progress"])
+
+    # do whatever based on selected row
+    if selected["progress"] < 50:
+        st.warning("Needs attention")
+    else:
+        st.success("Looks good")

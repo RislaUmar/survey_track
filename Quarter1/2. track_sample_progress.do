@@ -15,11 +15,12 @@ copy "https://docs.google.com/spreadsheets/d/`GOOGLE_SHEET_ID'/export?format=xls
      "`DATA'", replace
 
 import excel using "`DATA'", sheet("teams") firstrow clear
+gen tab_no = substr(username, 5, 2)
 
 * Get one row per psu
 keep if SupervisorName != ""
 
-bysort PSU (username): gen interviewers = username[1] + " | " + username[2]
+bysort PSU (username): gen interviewers = "Tab " + tab_no[1] + " / " + tab_no[2]
 bysort PSU: keep if _n == 1
 
 * edit island code
@@ -75,7 +76,7 @@ save `teams', replace
 erase "`DATA'"
 
 tempfile psu_block
-keep PSU block
+keep PSU block interviewers supervisor
 bysort PSU block : keep if _n == 1
 save `psu_block', replace
 /******************************************************************
@@ -229,7 +230,6 @@ drop isl
 replace TU_WDAY = trim(TU_WDAY)
 merge m:1 TU_WDAY using `all_labels', nogen
 save "${DIR_DATA_433FM_YQ}/all_weekday.dta", replace
-br
 restore
 
 drop TU_PERSON_SEX TU_WDAY
@@ -243,14 +243,16 @@ gen TUS_STATUS = inlist(status_tus, 1)
 
 * summary data (island and block level)
 preserve
-gen completed_HH = FILE1_STATUS > 0 & FILE2_STATUS > 0 & TUS_STATUS > 0
+gen completed_HH = FILE1_STATUS > 0 & FILE2_STATUS > 0
 collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS completed_HH, by(GHI_ISLAND_CODE)
 save "${DIR_DATA_433FM_YQ}/completion_island.dta",replace
 restore
 
 preserve
-gen completed_HH = FILE1_STATUS > 0 & FILE2_STATUS > 0 & TUS_STATUS > 0
-collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS completed_HH, by(GHI_ISLAND_CODE PSU)
+gen completed_HH = FILE1_STATUS > 0 & FILE2_STATUS > 0
+collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS completed_HH, by(GHI_ISLAND_CODE PSU interviewers supervisor)
+rename interviewers TAB
+rename supervisor SUP
 save "${DIR_DATA_433FM_YQ}/completion_psu.dta", replace
 restore
 
@@ -279,6 +281,15 @@ drop _merge
 erase "lq_file_cleaned.dta"
 
 save "${DIR_DATA_433FM_YQ}/progress_LQ.dta", replace
+
+preserve
+append using "${DIR_DATA_433FM_YQ}/progress.dta"
+order GHI_ISLAND_CODE PSU GHI_BLOCK_CODE block GHI_STRUCTURE DWELLING_ID SELECTION  HOUSEHOLD_HD_ID HOUSEHOLD_KEY LQ_ID file1_status file2_status status_tus completed_LQ nbslct total_ind_finished PERSON_NAME PERSON_AGE PERSON_SEX interviewers supervisor
+
+merge m:1 PSU using `psu_block', keep(3) keepusing(PSU block) nogen
+
+save "${DIR_DATA_433FM_YQ}/progress_all.dta" , replace
+restore
 
 * get team information
 merge m:1 GHI_BLOCK_CODE using `teams'
@@ -323,11 +334,12 @@ format completion_rate %9.2f
 
 order `lq_vars' , last
 order GHI_ISLAND_CODE
-merge 1:1 PSU using `psu_block', keep(3) nogen
+merge 1:1 PSU using `psu_block', keep(3) keepusing(PSU block) nogen
 drop PSU
 assert !missing(block)
 order block, after(GHI_ISLAND_CODE)
 order GHI_ISLAND_CODE block total_completed target , first
 
+merge 1:1 block using `psu_block', keep(1 3) keepusing(supervisor interviewers)  nogen
 save "${DIR_DATA_433FM_YQ}/completion_psu_all.dta",replace
 restore
