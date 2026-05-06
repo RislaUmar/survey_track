@@ -10,17 +10,54 @@ st.title("Time Use Survey Summary")
 tus_s_data ="data//all_person_s.dta"
 tus_w_data = "data/all_weekday.dta"
 
+st.sidebar.header("Quarter Filter")
+
+q1 = st.sidebar.checkbox("Quarter 1", value=True)
+q2 = st.sidebar.checkbox("Quarter 2", value=True)
+# q3 = st.sidebar.checkbox("Quarter 3", value=True)
+# q4 = st.sidebar.checkbox("Quarter 4", value=True)
+
+selected_quarters = []
+
+if q1:
+    selected_quarters.append("1")
+if q2:
+    selected_quarters.append("2")
+
+if not q1 and not q2:
+    selected_quarters.append("1")
+    selected_quarters.append("2")
+
+# if q3:
+#     selected_quarters.append("3")
+# if q4:
+#     selected_quarters.append("4")
+
 @st.cache_data
 def data_upload():
     df_tus_s = pd.read_stata(tus_s_data)
     df_tus_w = pd.read_stata(tus_w_data)
 
     islands = df_tus_s["GHI_ISLAND_CODE"].unique().tolist()
-    islands.remove("All")
     return df_tus_s , df_tus_w, islands
 
 
-df_tus_s , df_tus_w, islands= data_upload()
+df_tus_s_og , df_tus_w_og, islands= data_upload()
+
+df_tus_s = df_tus_s_og.copy()
+df_tus_w = df_tus_w_og.copy()
+
+if selected_quarters:
+    df_tus_s = df_tus_s_og[
+        df_tus_s_og["QUARTER"].isin(selected_quarters)
+    ].drop(columns="QUARTER").groupby(["GHI_ISLAND_CODE", "TU_PERSON_SEX"], as_index=False, observed=True).sum(numeric_only=True)
+    
+    df_tus_w = df_tus_w_og[
+        df_tus_w_og["QUARTER"].isin(selected_quarters)
+    ].drop(columns="QUARTER").groupby(["GHI_ISLAND_CODE", "TU_WDAY"], as_index=False, observed=True).sum(numeric_only=True)
+    
+    islands = df_tus_s["GHI_ISLAND_CODE"].unique().tolist()
+    st.session_state.selected_options = islands.copy()
 
 # initialize once
 if "select_all" not in st.session_state:

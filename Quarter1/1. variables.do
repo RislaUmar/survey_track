@@ -1,7 +1,7 @@
 * Define paths
 * ALL QUARTERS
-// local months 1 4 7 10
-local months 1
+local months 1 4
+// local months 1
 
 * Declare tempfiles
 tempfile sample_data
@@ -34,8 +34,8 @@ foreach var of local months{
 	display "`sample_file'"
 	if fileexists("`sample_file'") {
 		use "`sample_file'", clear
-		tostring New_ID, replace
-// 		replace QUARTER = $QUARTER
+// 		tostring New_ID, replace
+		replace QUARTER = "$QUARTER"
 		append using `sample_data'
 		save `sample_data', replace
     }

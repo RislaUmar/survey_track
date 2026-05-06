@@ -9,6 +9,7 @@ keep if ind_id !=  "##N/A##" & !missing(status)
 replace ind_id = trim(ind_id)
 
 // correct wrong IDs
+// QUARTER 01
 replace ind_id = "1" if interview__key == "22-46-38-80" & ind_id == "0442_4022_1_0031_0001"
 replace ind_id = "4" if interview__key == "01-97-47-26" & ind_id == "223"
 replace ind_id = "1" if interview__key == "60-96-80-95" & ind_id == "248"
@@ -21,16 +22,20 @@ replace ind_id = "9" if interview__key == "32-52-84-36" & ind_id == "4"
 replace ind_id = "5" if interview__key == "18-37-39-93" & ind_id == "10"
 
 drop if inlist(interview__key, "01-56-70-38", "14-88-27-82", "32-15-18-59", "30-08-15-07", "01-56-70-38")
-duplicates list LQ_ID ind_id
 
+// QUARTER 01
+replace ind_id = "16" if interview__key == "45-68-87-12" & ind_id == "2"
+
+duplicates list LQ_ID ind_id
+isid LQ_ID ind_id
 save `lq_main_file'
 
 // load person listing file
 use "${LQ_person_listing}" , clear
 
 // drop duplicates
+// QUARTER 01
 drop if inlist(interview__key, "98-24-79-01", "99-38-64-97", "81-28-77-31")
-isid LQ_ID
 
 keep interview__key interview__id GHI_ISLAND_CODE PSU GHI_BLOCK_CODE GHI_STRUCTURE DWELLING_ID SELECTION LQ_ID nbslct
 
@@ -44,12 +49,12 @@ rename ind_nme name
 rename ind__id ind_id
 tostring ind_id, replace
 
-// use  "${LQ_main_form}", clear 
 replace ind_id = trim(ind_id)
 drop interview__key interview__id
 
+isid LQ_ID ind_id
 merge 1:1 LQ_ID ind_id using `lq_main_file', keepusing(status interview__key ind_nme)
-
+// assert _merge != 2
 keep if inlist(_merge,1,3)
 drop _merge
 
@@ -57,6 +62,14 @@ replace indsta=1 if indsta==1
 
 gen finished = indsta==1
 // keep if indsta == 1
+replace status = 5 if indsta==2
+replace status = 6 if indsta==3
+replace status = 96 if indsta==4
+replace status = 97 if missing(status)
+
+label define status 97 "Status Pending" 96 "No, Unable to interview due to language", add
+
+save "lq_file_individual_status.dta", replace
 
 bysort LQ_ID: egen total_ind_finished = total(finished)
 keep GHI_STRUCTURE DWELLING_ID LQ_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_CODE nbslct total_ind_finished
