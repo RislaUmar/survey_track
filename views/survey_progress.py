@@ -3,6 +3,8 @@ from st_aggrid import AgGrid
 from st_aggrid.grid_options_builder import GridOptionsBuilder
 from st_aggrid.shared import JsCode
 import pandas as pd
+from io import BytesIO
+from openpyxl import Workbook
 
 # ---- PAGE SETUP ----
 st.set_page_config(page_title="HIES and TUS Progress", layout="wide")
@@ -264,7 +266,6 @@ island_event = st.dataframe(
 selected_rows = island_event.selection.rows
 
 def download(df, name, label):
-    from io import BytesIO
 
     output = BytesIO()
 
