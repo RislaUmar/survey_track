@@ -449,6 +449,7 @@ if selected_rows:
         selection_mode="single-row",
     )
     
+    download(styled_df, "Block Progress", "Download Block ProgressTable")
     st.info("🔴 Red TUS cells = TUS form does not match HIES forms. Select a block to view details.")
 
     st.markdown(
