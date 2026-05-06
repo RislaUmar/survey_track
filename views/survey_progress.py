@@ -4,7 +4,6 @@ from st_aggrid.grid_options_builder import GridOptionsBuilder
 from st_aggrid.shared import JsCode
 import pandas as pd
 from io import BytesIO
-from openpyxl import Workbook
 
 # ---- PAGE SETUP ----
 st.set_page_config(page_title="HIES and TUS Progress", layout="wide")
