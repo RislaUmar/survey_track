@@ -21,13 +21,19 @@ project_2_page = st.Page(
     icon=":material/overview:"
 )
 
+project_3_page = st.Page(
+    page="views/status_summary.py",
+    title="Status Summary",
+    icon=":material/overview:"
+)
+
 # NAVIGATION SETUP 
-pg = st.navigation(pages=[about_page, project_1_page, project_2_page]) # (WITHOUT SECTION)
+pg = st.navigation(pages=[about_page, project_1_page, project_2_page, project_3_page]) # (WITHOUT SECTION)
 
 pg = st.navigation(
     {
         "Info": [about_page],
-        "Projects": [project_1_page, project_2_page]
+        "Projects": [project_1_page, project_2_page, project_3_page]
     }
 ) # (WITH SECTION)
 

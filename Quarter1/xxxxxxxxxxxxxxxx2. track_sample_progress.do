@@ -4,7 +4,7 @@
 * - LQ Form
 * - TUS
 *===========================================================================*
-local quarter_num 2
+
 /******************************************************************
  1. GET TEAMS 
 ******************************************************************/
@@ -15,12 +15,10 @@ copy "https://docs.google.com/spreadsheets/d/`GOOGLE_SHEET_ID'/export?format=xls
      "`DATA'", replace
 
 import excel using "`DATA'", sheet("teams") firstrow clear
-
-* get assigned blocks
-keep if SupervisorName != ""
-
-* get tab number + generate tab pairs
 gen tab_no = substr(username, 5, 2)
+
+* Get one row per psu
+keep if SupervisorName != ""
 
 bysort PSU (username): gen interviewers = "Tab " + tab_no[1] + " / " + tab_no[2]
 bysort PSU: keep if _n == 1
@@ -99,6 +97,8 @@ use "${HIES_FILE}", clear
 
 * Keep only the identifying column
 keep $IDENTIFYING
+* drop if status missing
+keep if !missing(status)
 
 * rename TUS variables
 rename selectedName_1 PERSON_NAME  
@@ -117,8 +117,8 @@ TUS but file not complete
 */
 
 * save tus details
-preserve
 tempfile tus_dets
+preserve
 keep if file==1
 keep HOUSEHOLD_KEY PERSON_NAME PERSON_AGE PERSON_SEX
 duplicates list HOUSEHOLD_KEY
@@ -127,11 +127,10 @@ restore
 
 drop PERSON_NAME PERSON_AGE PERSON_SEX
 
-*x*x*x************************** temp 
-destring PSU, replace
-format PSU %03.0f
-tostring PSU, replace
-
+/*
+temp
+*/
+duplicates drop HOUSEHOLD_KEY file , force
 * reshape status wide format
 reshape wide status , i(HOUSEHOLD_KEY ) j(file)
 
@@ -142,7 +141,6 @@ rename status2 file2_status
 isid HOUSEHOLD_HD_ID
 isid HOUSEHOLD_KEY
 
-* merge with tus information
 merge 1:1 HOUSEHOLD_KEY using `tus_dets' , keep(1 3) nogen
 
 * merge with tus data
@@ -150,7 +148,7 @@ rename HOUSEHOLD_KEY TIMEUSE_ID
 merge 1:1 TIMEUSE_ID using "${TUS_FILE}", keepusing(status_tus TU_PERSON_SEX TU_WDAY)
 
 list TIMEUSE_ID if _merge==2
-// assert _merge != 2 // ----------------------- edit
+// assert _merge != 2 ----------------------- edit
 
 keep if  inlist(_merge,1,3)
 drop _merge
@@ -164,21 +162,12 @@ save `hies_file'
 ******************************************************************/
 use "${sample_file}", clear
 
-* Get the team information
-merge m:1 GHI_BLOCK_CODE using `teams' , keepusing(interviewers supervisor block PSU) keep(3) nogen
-
 * Get the total target for each island for each quarter
 preserve
 tempfile targets
-bysort GHI_ISLAND_CODE QUARTER PSU : gen target_psu = 16
-bysort GHI_ISLAND_CODE QUARTER PSU : keep if _n==1
-
-keep GHI_ISLAND_CODE QUARTER PSU target_psu
-
-replace target_psu = 3 if PSU == "080"
-
-collapse (sum) target = target_psu , by(GHI_ISLAND_CODE QUARTER)
-
+bysort GHI_ISLAND_CODE QUARTER: egen no_psus = nvals(PSU)
+bysort GHI_ISLAND_CODE QUARTER no_psus : keep if _n==1
+gen target = no_psus * 16
 keep GHI_ISLAND_CODE QUARTER target
 save `targets', replace
 restore
@@ -187,7 +176,7 @@ restore
 keep if lq_id == ""
 
 * HH to keep
-global IDENTIFYING interviewers supervisor QUARTER HOUSEHOLD_HD_ID HOUSEHOLD_KEY GHI_STRUCTURE DWELLING_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_CODE block
+global IDENTIFYING QUARTER HOUSEHOLD_HD_ID HOUSEHOLD_KEY GHI_STRUCTURE DWELLING_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_CODE
 
 gen HOUSEHOLD_KEY = regexs(1) if regexm(HOUSEHOLD_HD_ID,"\((.*)\)")
 
@@ -200,6 +189,8 @@ merge 1:1 HOUSEHOLD_HD_ID using `hies_file'
 
 list HOUSEHOLD_HD_ID if _merge==2
 assert _merge != 2
+
+// keep if inlist(_merge,1,3)
 drop _merge
 
 
@@ -211,63 +202,22 @@ label define lbl 97 "Status Pending", add
 replace file1_status = 97 if missing(file1_status)
 replace file2_status = 97 if missing(file2_status)
 
-label define status 97 "Status Pending" 96 "In Progress" 95 "Invalid" 93 "Individual Refused" 94 "Individual Unavailable", add
+label define status 97 "Status Pending", add
 
+* Get the team information
+merge m:1 GHI_BLOCK_CODE using `teams'
+assert _merge!=1
+keep if _merge == 3
+drop _merge
 
 order interviewers supervisor $IDENTIFYING
 order file1_status file2_status status_tus, last
 
-* save household summary data
-save "${DIR_DATA_433FM_YQ}/progress_HH.dta", replace
-
-*-----------------------------*
-* TIMEUSE SUMMARY
-*-----------------------------*
-* WEEKDAY labels
-preserve
-clear
-tempfile all_labels
-input str10 TU_WDAY
-"Sunday"
-"Monday"
-"Tuesday"
-"Wednesday"
-"Thursday"
-"Friday"
-"Saturday"
-end
-
-* create for each QUARTER
-expand `quarter_num'
-
-* assign quarter numbers
-bysort TU_WDAY: gen QUARTER = _n
-tostring QUARTER , replace
-save `all_labels', replace
-restore
-
-*-----------------------------*
-* WEEKDAY
-*-----------------------------*
-preserve
-keep if status_tus == 1
-gen n = 1
-collapse (count) n, by (TU_WDAY  GHI_ISLAND_CODE QUARTER)
-rename GHI_ISLAND_CODE isl
-decode isl, gen(GHI_ISLAND_CODE)
-drop isl
-
-replace TU_WDAY = trim(TU_WDAY)
-merge m:1 QUARTER TU_WDAY using `all_labels', nogen
-save "${DIR_DATA_433FM_YQ}/all_weekday.dta", replace
-restore
-
-*-----------------------------*
-* PERSON SEX
-*-----------------------------*
+* create tus summaries
+* person sex
 preserve
 tempfile all_pu_s
-keep if status_tus == 1
+keep if status_tus != 0
 gen n = 1
 collapse (count) n, by (TU_PERSON_SEX  GHI_ISLAND_CODE QUARTER)
 rename GHI_ISLAND_CODE isl
@@ -277,32 +227,54 @@ drop isl
 save "${DIR_DATA_433FM_YQ}/all_person_s.dta", replace
 restore
 
+* weekday
+preserve
+clear
+tempfile all_labels 
+input str10 TU_WDAY
+"Sunday"
+"Monday"
+"Tuesday"
+"Wednesday"
+"Thursday"
+"Friday"
+"Saturday"
+end
+save `all_labels', replace
+restore
+
+preserve
+keep if status_tus != 0
+gen n = 1
+collapse (count) n, by (TU_WDAY  GHI_ISLAND_CODE QUARTER)
+rename GHI_ISLAND_CODE isl
+decode isl, gen(GHI_ISLAND_CODE)
+drop isl
+
+replace TU_WDAY = trim(TU_WDAY)
+merge m:1 TU_WDAY using `all_labels', nogen
+save "${DIR_DATA_433FM_YQ}/all_weekday.dta", replace
+restore
+
 drop TU_PERSON_SEX TU_WDAY
 
-*-----------------------------*
-* HH COMPLETION PROGRESS
-*-----------------------------*
+save "${DIR_DATA_433FM_YQ}/progress.dta", replace
+
 * see if completed or not
 gen FILE1_STATUS = inlist(file1_status,1,2,3)
 gen FILE2_STATUS = inlist(file2_status,1,2,3)
 gen TUS_STATUS = inlist(status_tus, 1)
-gen TUS_MISSING = inlist(file1_status,1,2,3) & status_tus == 97
 
-*---------------------------------------*
-* ISLAND LEVEL summary data 
-*---------------------------------------*
+* summary data (island and block level)
 preserve
 gen completed_HH = FILE1_STATUS > 0 & FILE2_STATUS > 0
 collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS completed_HH, by(GHI_ISLAND_CODE QUARTER)
 save "${DIR_DATA_433FM_YQ}/completion_island.dta",replace
 restore
 
-*---------------------------------------*
-* BLOCK LEVEL summary data 
-*---------------------------------------*
 preserve
 gen completed_HH = FILE1_STATUS == 1 & FILE2_STATUS == 1
-collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS TUS_MISSING completed_HH, by(GHI_ISLAND_CODE PSU block QUARTER interviewers supervisor)
+collapse (sum) FILE1_STATUS FILE2_STATUS TUS_STATUS completed_HH, by(GHI_ISLAND_CODE PSU QUARTER interviewers supervisor)
 save "${DIR_DATA_433FM_YQ}/completion_psu.dta", replace
 restore
 
@@ -312,18 +284,14 @@ restore
 * lq progress
 do "${DIR_PROG_433FM_YQ}3. lq_file_cleaning.do"
 
-* sample data
 use "${sample_file}", clear
-
-* Get the team information
-merge m:1 GHI_BLOCK_CODE using `teams' , keepusing(interviewers supervisor block PSU) keep(3) nogen
 
 * keep if LQ
 keep if lq_id != ""
 
-global IDENTIFYING interviewers supervisor QUARTER LQ_ID GHI_STRUCTURE DWELLING_ID PSU GHI_ISLAND_CODE GHI_BLOCK_CODE block
+global IDENTIFYING QUARTER LQ_ID GHI_STRUCTURE DWELLING_ID PSU GHI_ISLAND_CODE GHI_BLOCK_CODE
 
-keep if selection != 2 // removes replacement LQs
+keep if selection != 2
 
 rename lq_id LQ_ID
 keep $IDENTIFYING
@@ -336,28 +304,29 @@ drop _merge
 
 erase "lq_file_cleaned.dta"
 
-
-* save LQ summary data
 save "${DIR_DATA_433FM_YQ}/progress_LQ.dta", replace
 
 
-/******************************************************************
-4. Append LQ and HH
-******************************************************************/
-append using "${DIR_DATA_433FM_YQ}/progress_HH.dta"
+
+* get team information
+merge m:1 GHI_BLOCK_CODE using `teams'
+assert _merge!=1
+keep if inlist(_merge,1,3)
+drop _merge
+
+preserve
+append using "${DIR_DATA_433FM_YQ}/progress.dta"
 order GHI_ISLAND_CODE PSU GHI_BLOCK_CODE block GHI_STRUCTURE DWELLING_ID SELECTION  HOUSEHOLD_HD_ID HOUSEHOLD_KEY LQ_ID file1_status file2_status status_tus completed_LQ nbslct total_ind_finished PERSON_NAME PERSON_AGE PERSON_SEX interviewers supervisor
 
-
-label define completed_LQ_lbl 1 "Complete" 0 "Incomplete"
-label values completed_LQ completed_LQ_lbl
+label define lq_status 0 "Incomplete" 1 "Complete"
+label values completed_LQ 
+merge m:1 PSU QUARTER using `psu_block', keep(3) keepusing(PSU block) nogen
 
 save "${DIR_DATA_433FM_YQ}/progress_all.dta" , replace
+restore
 
-
-*---------------------------------------*
-* ISLAND LEVEL summary data ALL
-*---------------------------------------*
-use "${DIR_DATA_433FM_YQ}/progress_LQ.dta" , clear
+* totals for island level
+preserve
 collapse (sum) nbslct total_ind_finished completed_LQ , by(GHI_ISLAND_CODE QUARTER)
 merge 1:1 GHI_ISLAND_CODE QUARTER using "${DIR_DATA_433FM_YQ}/completion_island.dta", nogen
 
@@ -374,12 +343,11 @@ gen completion_rate = (total_completed / target) * 100
 format completion_rate %9.2f
 order GHI_ISLAND_CODE total_completed target , first
 save "${DIR_DATA_433FM_YQ}/completion_island_all.dta",replace
+restore
 
-*---------------------------------------*
-* BLOCK LEVEL summary data ALL
-*---------------------------------------*
-use "${DIR_DATA_433FM_YQ}/progress_LQ.dta" , clear
-collapse (sum) nbslct completed_LQ total_ind_finished , by(GHI_ISLAND_CODE PSU block QUARTER interviewers supervisor)
+* totals for block level
+preserve
+collapse (sum) nbslct completed_LQ total_ind_finished , by(GHI_ISLAND_CODE PSU QUARTER interviewers supervisor)
 merge 1:1 GHI_ISLAND_CODE PSU QUARTER interviewers supervisor using "${DIR_DATA_433FM_YQ}/completion_psu.dta", nogen
 rename interviewers TAB
 rename supervisor SUP
@@ -395,60 +363,49 @@ gen completion_rate = (total_completed / target) * 100
 format completion_rate %9.2f
 
 order `lq_vars' , last
-order GHI_ISLAND_CODE block total_completed target , first
-
+order GHI_ISLAND_CODE
+merge 1:1 PSU QUARTER using `psu_block', keep(3) keepusing(PSU block) nogen
+// drop PSU
 assert !missing(block)
+order block, after(GHI_ISLAND_CODE)
+order GHI_ISLAND_CODE block total_completed target , first
 
 merge 1:1 block QUARTER using `psu_block', keep(1 3) keepusing(supervisor interviewers)  nogen
 save "${DIR_DATA_433FM_YQ}/completion_psu_all.dta",replace
+restore
 
-
-*---------------------------------------*
-* HH and LQ LEVEL summary data ALL
-*---------------------------------------*
-use "${DIR_DATA_433FM_YQ}/progress_HH.dta" , clear
+use "${DIR_DATA_433FM_YQ}/progress.dta" , clear
 gen obs = 1
 preserve
 collapse (sum) obs , by (block QUARTER file1_status)
-// reshape wide obs , i(block QUARTER) j(file1_status)
-rename file1_status status
-gen form = "HH"
+reshape wide obs , i(block QUARTER) j(file1_status)
 save "${DIR_DATA_433FM_YQ}/file1.dta", replace
 restore
 
-/*
 preserve
 collapse (sum) obs , by (block QUARTER file2_status)
 reshape wide obs , i(block QUARTER) j(file2_status)
 save "${DIR_DATA_433FM_YQ}/file2.dta", replace
 restore
-*/
 
 preserve
 collapse (sum) obs , by (block QUARTER status_tus)
-// reshape wide obs , i(block QUARTER) j(status_tus)
-rename status_tus status
-
-gen form = "TUS"
+reshape wide obs , i(block QUARTER) j(status_tus)
 save "${DIR_DATA_433FM_YQ}/tus.dta", replace
-
 restore
 
-
 use "lq_file_individual_status.dta", clear
-merge m:1 LQ_ID using "${DIR_DATA_433FM_YQ}/progress_LQ.dta"
+merge m:1 LQ_ID using "${DIR_DATA_433FM_YQ}/progress_LQ.dta", keepusing(QUARTER LQ_ID)
 assert _merge == 3
+keep if _merge == 3
+drop _merge
+merge m:1 PSU QUARTER using `psu_block', keep(1 3) keepusing(block supervisor interviewers)
+assert _merge != 1
 keep if _merge == 3
 drop _merge
 
 gen obs = 1
 collapse (sum) obs , by (block QUARTER status)
-// reshape wide obs , i(block QUARTER) j(status)
-gen form = "LQ"
+reshape wide obs , i(block QUARTER) j(status)
+
 save "${DIR_DATA_433FM_YQ}/lq_file_individual_status.dta", replace
-
-append using "${DIR_DATA_433FM_YQ}/file1.dta" "${DIR_DATA_433FM_YQ}/tus.dta"
-
-label define status 96 "In Progress" 95 "Invalid" 93 "Individual Refused" 94 "Individual Unavailable", modify
-
-save "${DIR_DATA_433FM_YQ}/status.dta" , replace

@@ -3,3 +3,7 @@ streamlit-aggrid
 matplotlib
 plotly
 openpyxl
+dash
+pandas
+pyreadstat
+gunicorn

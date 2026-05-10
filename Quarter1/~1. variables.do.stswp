@@ -133,6 +133,6 @@ global sample_file "${FIELD_MONT}\sample_data.dta"
 global HIES_FILE "${FIELD_MONT}\hies_data.dta"
 
 global LQ_person_listing "${FIELD_MONT}\lq_listing.dta"
-global LQ_person_listing_merged "${FIELD_MONT}\lq_listing_merged.dta"
+global LQ_person_listing_merged "${FIELD_MONT}\lq_listing_selection.dta"
 global LQ_person_listing "${FIELD_MONT}\lq_listing.dta"
 global LQ_main_form "${FIELD_MONT}\lq_main.dta"

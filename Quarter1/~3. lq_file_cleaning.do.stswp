@@ -43,7 +43,7 @@ rename status completed_LQ_listing
 bysort LQ_ID : keep if _n==1
 
 gen completed_LQ_ind = nbslct - total_ind_finished
-gen completed_LQ = (completed_LQ_ind==0) & completed_LQ_listing
+gen completed_LQ = (completed_LQ_ind==) & completed_LQ_listing
 
 assert nbslct >= total_ind_finished
 save "lq_file_cleaned.dta", replace
