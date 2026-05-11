@@ -249,7 +249,7 @@ def color_tus_if_less(row, flag=False):
             lq_status_listing = str(row["COMPLETED_LQ_listing"]).strip()
 
             comp_status = ["Complete", "Partially complete (refused)", "Partially complete (unavailable)"]
-            print(lq_status_inds)
+
             color(row, file1, comp_status, styles, "FILE1_STATUS")
             color(row, file2, comp_status, styles, "FILE2_STATUS")
             # color(row, lq_status, comp_status, styles, "LQ_STATUS")
@@ -342,6 +342,7 @@ if selected_rows:
             axis=1
         )
         df_psu_display_view = df_psu_display_view[mask]
+    
     styled_df = df_psu_display_view.style.apply(color_tus_if_less, flag=True,  axis=1)
     
     blocks_event = st.dataframe(
@@ -384,9 +385,10 @@ if selected_rows:
     # st.info("🔴 Red TUS cells = TUS form does not match HIES forms. Select a block to view details.")
 
     selected_block_rows = blocks_event.selection.rows
-    if selected_block_rows:
-        blocks = df_psu_display.iloc[selected_block_rows]["BLOCKS"].tolist()
-
+    if selected_block_rows:        
+        
+        blocks = df_psu_display_view.iloc[selected_block_rows]["BLOCKS"].tolist()
+        # print(blocks)
         df_filtered_all = df_sample[df_sample["BLOCKS"].isin(blocks)].copy()
 
         st.subheader(f"Sample detail for Block : {blocks[0]}")
