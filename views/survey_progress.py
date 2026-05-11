@@ -114,10 +114,10 @@ def data_upload():
     
     df_sample = df_sample.sort_values(by="LQ_ID")
     df_sample = df_sample[["QUARTER", "ISLAND", "BLOCKS", "SELECTION",
-                           "HOUSEHOLD_HD_ID", "HOUSEHOLD_KEY", "LQ_ID",
+                           "HOUSEHOLD_HD_ID", "HOUSEHOLD_KEY", 
                            "FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS", 
                         #    "LQ_STATUS",
-                            "COMPLETED_LQ_ind","COMPLETED_LQ_listing",
+                           "LQ_ID","COMPLETED_LQ_ind","COMPLETED_LQ_listing",
                            "TUS_PERSON_NAME", "TUS_PERSON_AGE", "TUS_PERSON_SEX",
                            "SELECTED INDIVIDUALS", "INTERVIEWED LQ INDIVIDUALS", 
                            "INTERVIEWERS", "SUP"]]
@@ -402,16 +402,42 @@ if selected_rows:
                 axis=1
             )
             df_filtered_all_view = df_filtered_all_view[mask]
-            
+        
+        # def get_col_width(series, min_px=80, max_px=400):
+        #     max_len = series.astype(str).map(len).max()
+        #     return min(max(max_len * 10, min_px), max_px)
+
+        # block_width = get_col_width(df_filtered_all_view["BLOCKS"])    
+        column_config = {}
+
+        for col in df_filtered_all_view.columns:
+
+            max_len = df_filtered_all_view[col].astype(str).map(len).max()
+
+            width = min(max(max_len * 10, 80), 400)
+
+            if width < 120:
+                size = "small"
+            elif width < 220:
+                size = "medium"
+            else:
+                size = "large"
+
+            column_config[col] = size
         styled_sample =  df_filtered_all_view.style.apply(color_tus_if_less,  axis=1)
+
+        
         st.dataframe(
             styled_sample,
             column_config={
                 "TUS_PERSON_AGE": st.column_config.NumberColumn(format="%d"),
-                "LQ_ID": st.column_config.NumberColumn(format="%d"),
-                "COMPLETED_LQ_ind": st.column_config.NumberColumn(format="%d")
+                "LQ_ID": st.column_config.TextColumn(width=column_config["LQ_ID"]),
+                "COMPLETED_LQ_ind": st.column_config.NumberColumn(format="%d"),
+                "SELECTED INDIVIDUALS": st.column_config.NumberColumn(format="%d"),
+                "INTERVIEWED LQ INDIVIDUALS": st.column_config.NumberColumn(format="%d")
                 },
-                
+            # column_config=column_config,
+            use_container_width=True,
             hide_index=True
             )
         
