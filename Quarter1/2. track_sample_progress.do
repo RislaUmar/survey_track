@@ -164,6 +164,23 @@ save `hies_file'
 ******************************************************************/
 use "${sample_file}", clear
 
+* only HHs
+keep if lq_id == ""
+
+* HH to keep
+global IDENTIFYING QUARTER HOUSEHOLD_HD_ID HOUSEHOLD_KEY GHI_STRUCTURE DWELLING_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_CODE
+
+gen HOUSEHOLD_KEY = regexs(1) if regexm(HOUSEHOLD_HD_ID,"\((.*)\)")
+rename selection SELECTION
+keep  $IDENTIFYING
+
+* merge the sample file with the hies file
+merge 1:1 HOUSEHOLD_HD_ID using `hies_file'
+
+list HOUSEHOLD_HD_ID if _merge==2
+// assert _merge != 2
+drop _merge
+
 * Get the team information
 merge m:1 GHI_BLOCK_CODE using `teams' , keepusing(interviewers supervisor block PSU) keep(3) nogen
 
@@ -183,26 +200,8 @@ keep GHI_ISLAND_CODE QUARTER target
 save `targets', replace
 restore
 
-* only HHs
-keep if lq_id == ""
-
-* HH to keep
-global IDENTIFYING interviewers supervisor QUARTER HOUSEHOLD_HD_ID HOUSEHOLD_KEY GHI_STRUCTURE DWELLING_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_CODE block
-
-gen HOUSEHOLD_KEY = regexs(1) if regexm(HOUSEHOLD_HD_ID,"\((.*)\)")
-
-rename selection SELECTION
-
-keep  $IDENTIFYING
-
-* merge the sample file with the hies file
-merge 1:1 HOUSEHOLD_HD_ID using `hies_file'
-
-list HOUSEHOLD_HD_ID if _merge==2
-assert _merge != 2
-drop _merge
-
-
+global IDENTIFYING interviewers supervisor QUARTER HOUSEHOLD_HD_ID HOUSEHOLD_KEY GHI_STRUCTURE DWELLING_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_CODE block SELECTION
+order $IDENTIFYING , first
 * update status labels
 replace status_tus = 97 if missing(status_tus)
 label define lbl 97 "Status Pending", add
@@ -321,11 +320,12 @@ merge m:1 GHI_BLOCK_CODE using `teams' , keepusing(interviewers supervisor block
 * keep if LQ
 keep if lq_id != ""
 
-global IDENTIFYING interviewers supervisor QUARTER LQ_ID GHI_STRUCTURE DWELLING_ID PSU GHI_ISLAND_CODE GHI_BLOCK_CODE block
+global IDENTIFYING interviewers supervisor QUARTER LQ_ID GHI_STRUCTURE DWELLING_ID PSU GHI_ISLAND_CODE GHI_BLOCK_CODE block SELECTION
 
 keep if selection != 2 // removes replacement LQs
 
 rename lq_id LQ_ID
+rename selection SELECTION
 keep $IDENTIFYING
 
 merge 1:1 LQ_ID using `"lq_file_cleaned.dta"'
@@ -345,12 +345,13 @@ save "${DIR_DATA_433FM_YQ}/progress_LQ.dta", replace
 4. Append LQ and HH
 ******************************************************************/
 append using "${DIR_DATA_433FM_YQ}/progress_HH.dta"
-order GHI_ISLAND_CODE PSU GHI_BLOCK_CODE block GHI_STRUCTURE DWELLING_ID SELECTION  HOUSEHOLD_HD_ID HOUSEHOLD_KEY LQ_ID file1_status file2_status status_tus completed_LQ nbslct total_ind_finished PERSON_NAME PERSON_AGE PERSON_SEX interviewers supervisor
+order GHI_ISLAND_CODE PSU GHI_BLOCK_CODE block GHI_STRUCTURE DWELLING_ID SELECTION  HOUSEHOLD_HD_ID HOUSEHOLD_KEY LQ_ID file1_status file2_status status_tus completed_LQ nbslct total_ind_finished PERSON_NAME PERSON_AGE PERSON_SEX interviewers supervisor SELECTION
 
 
 label define completed_LQ_lbl 1 "Complete" 0 "Incomplete"
 label values completed_LQ completed_LQ_lbl
 
+label define status 7 "Not used" , modify
 save "${DIR_DATA_433FM_YQ}/progress_all.dta" , replace
 
 
@@ -399,7 +400,6 @@ order GHI_ISLAND_CODE block total_completed target , first
 
 assert !missing(block)
 
-merge 1:1 block QUARTER using `psu_block', keep(1 3) keepusing(supervisor interviewers)  nogen
 save "${DIR_DATA_433FM_YQ}/completion_psu_all.dta",replace
 
 

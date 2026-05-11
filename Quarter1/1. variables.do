@@ -47,7 +47,7 @@ foreach var of local months{
     }
 	
 	* hies data dir
-	local HIES_FILE "`DATA_DIR'HouseholdHIES2026_COMBINED\householdhies2026.dta"
+	local HIES_FILE "`DATA_DIR'HouseholdHIES2026_COMBINED\householdhies2026_all.dta"
 	// combine hies data
 	display "`HIES_FILE'"
 	if fileexists("`HIES_FILE'") {

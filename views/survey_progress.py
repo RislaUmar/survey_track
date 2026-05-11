@@ -87,7 +87,7 @@ def data_upload():
         [
             "QUARTER", "ISLAND", "BLOCKS", "COMPLETED HHs", "COMPLETED LQs", "TARGET",
             "COMPLETION_RATE", "TUS_STATUS", "TUS_MISSING", "INTERVIEWED LQ INDIVIDUALS",
-            "INTERVIEWERS", "SUP"
+            "TAB", "SUP"
         ]
     ]
 
@@ -113,7 +113,7 @@ def data_upload():
     })
     
     df_sample = df_sample.sort_values(by="LQ_ID")
-    df_sample = df_sample[["QUARTER", "ISLAND", "BLOCKS",
+    df_sample = df_sample[["QUARTER", "ISLAND", "BLOCKS", "SELECTION",
                            "HOUSEHOLD_HD_ID", "HOUSEHOLD_KEY", "LQ_ID",
                            "FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS", 
                         #    "LQ_STATUS",
@@ -145,7 +145,7 @@ if selected_quarters:
     
     df_sample = df_sample_og[
         df_sample_og["QUARTER"].isin(selected_quarters)
-    ].sort_values(by=["QUARTER", "LQ_ID"])
+    ].sort_values(by=["QUARTER", "SELECTION", "FILE1_STATUS", "LQ_ID"])
     
 
 def get_totals(df_i, df_p):
@@ -224,8 +224,10 @@ def color(row, files, comp_status, styles, name):
     elif (files in comp_status[1:]):
         tus_idx = row.index.get_loc(name)
         styles[tus_idx] = "background-color: #FFD580; color: black; font-weight: 600;"
+    elif (files == "Status Pending"):
+        tus_idx = row.index.get_loc(name)
+        styles[tus_idx] = "background-color: black; color: white; font-weight: 600;"
     elif str(files) != "nan":
-        print(files, name)
         tus_idx = row.index.get_loc(name)
         styles[tus_idx] = "background-color: #ffb09c; color: black; font-weight: 600;"
 
@@ -323,7 +325,7 @@ if selected_rows:
         "TUS_MISSING",
         # "TUS_STATUS",
         "INTERVIEWED LQ INDIVIDUALS",
-        "INTERVIEWERS",
+        "TAB",
         "SUP"
     ]
 
