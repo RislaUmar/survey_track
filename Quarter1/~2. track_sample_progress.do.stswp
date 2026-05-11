@@ -128,9 +128,7 @@ restore
 drop PERSON_NAME PERSON_AGE PERSON_SEX
 
 *x*x*x************************** temp 
-destring PSU, replace
-format PSU %03.0f
-tostring PSU, replace
+replace PSU = string(real(myvar), "%03.0f")
 
 * reshape status wide format
 reshape wide status , i(HOUSEHOLD_KEY ) j(file)
@@ -351,7 +349,7 @@ order GHI_ISLAND_CODE PSU GHI_BLOCK_CODE block GHI_STRUCTURE DWELLING_ID SELECTI
 label define completed_LQ_lbl 1 "Complete" 0 "Incomplete"
 label values completed_LQ completed_LQ_lbl
 
-label define status 7 "Not us"
+label define status 7 "Not used" , modify
 save "${DIR_DATA_433FM_YQ}/progress_all.dta" , replace
 
 

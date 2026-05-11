@@ -128,9 +128,7 @@ restore
 drop PERSON_NAME PERSON_AGE PERSON_SEX
 
 *x*x*x************************** temp 
-destring PSU, replace
-format PSU %03.0f
-tostring PSU, replace
+replace PSU = string(real(PSU), "%03.0f")
 
 * reshape status wide format
 reshape wide status , i(HOUSEHOLD_KEY ) j(file)
