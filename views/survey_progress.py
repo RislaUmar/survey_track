@@ -4,7 +4,7 @@ from st_aggrid.grid_options_builder import GridOptionsBuilder
 from st_aggrid.shared import JsCode
 import pandas as pd
 from io import BytesIO
-
+from datetime import datetime
 # ---- PAGE SETUP ----
 st.set_page_config(page_title="HIES and TUS Progress", layout="wide")
 
@@ -20,6 +20,8 @@ tus = "data/tus.dta"
 
 # TITLE
 st.title("HIES and TUS Progress")
+now = datetime.now()
+st.markdown(f"***Last updated on**: {now.strftime("%A, %d %B %Y %H:%M:%S")}*")
 
 # SIDEBAR FILTERS
 # QUARTERS
@@ -176,7 +178,7 @@ col4.metric("HIES COMPLETION RATE", f"{completion:.0f}%")
 
 col1, col2, col3, col4 = st.columns(4)
 col2.metric("COMPLETED TUS", f"{total_tus:.0f}")
-col4.metric("TUS COMPLETION RATE", f"{completion_tus:.0f}")
+col4.metric("TUS COMPLETION RATE", f"{completion_tus:.0f}%")
 
 # ---- ISLAND SUMMARY ----
 st.header("Island Summary")
