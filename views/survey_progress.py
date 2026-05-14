@@ -20,8 +20,15 @@ tus = "data/tus.dta"
 
 # TITLE
 st.title("HIES and TUS Progress")
-now = datetime.now()
-st.markdown(f"***Last updated on**: {now.strftime("%A, %d %B %Y %H:%M:%S")}*")
+
+if "frozen_time" not in st.session_state:
+    st.session_state.frozen_time = datetime.now()
+
+st.markdown(
+    st.session_state.frozen_time.strftime(
+        "%A, %d %B %Y %H:%M:%S"
+    )
+)
 
 # SIDEBAR FILTERS
 # QUARTERS
