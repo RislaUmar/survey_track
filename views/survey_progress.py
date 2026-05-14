@@ -21,15 +21,14 @@ tus = "data/tus.dta"
 # TITLE
 st.title("HIES and TUS Progress")
 
-if "frozen_time" not in st.session_state:
-    st.session_state.frozen_time = datetime.now()
+print(datetime.now())
+
+
+fixed_time = datetime(2026,5,14,11,22,44)
 
 st.markdown(
-    st.session_state.frozen_time.strftime(
-        "%A, %d %B %Y %H:%M:%S"
-    )
+    f"***Last updated on: 📅 {fixed_time.strftime('%A, %d %B %Y %H:%M:%S')}***"
 )
-
 # SIDEBAR FILTERS
 # QUARTERS
 st.sidebar.header("Quarter Filter")
