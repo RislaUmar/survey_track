@@ -17,8 +17,7 @@ tostring ind_id, replace
 
 // merge with LQ individual file
 merge 1:m LQ_ID ind_id using `lq_main_file', keepusing(status interview__key ind_nme)
-
-
+assert if LQ_ID == 1
 // check inconsistency
 // assert _merge != 2
 keep if inlist(_merge,1,3)

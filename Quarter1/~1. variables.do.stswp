@@ -43,7 +43,7 @@ foreach var of local months{
 		}
 		replace QUARTER = "$QUARTER"
 		
-		replace lq_id = "1" if missing(lq_id) & HOUSEHOLD_HD_ID == "Naseeribrahim (1004_3463_1_0012_0001_0001)"
+		replace LQ_ID = "1" if missing(lq_id) & HOUSEHOLD_HD_ID == "Naseeribrahim (1004_3463_1_0012_0001_0001)"
 		append using `sample_data'
 		save `sample_data', replace
     }

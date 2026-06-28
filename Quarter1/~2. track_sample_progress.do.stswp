@@ -472,13 +472,12 @@ use "${DIR_DATA_433FM_YQ}/progress_all.dta" , clear
 
 keep if inlist(file1_status,1,2,3) & inlist(status_tus,97,96) & QUARTER == "2" & !inlist( GHI_ISLAND_CODE ,442,591)
 keep supervisor GHI_ISLAND_CODE PSU block GHI_STRUCTURE DWELLING_ID HOUSEHOLD_HD_ID file1_status file2_status status_tus PERSON_NAME PERSON_AGE PERSON_SEX 
-order supervisor GHI_ISLAND_CODE PSU block GHI_STRUCTURE DWELLING_ID HOUSEHOLD_HD_ID file1_status file2_status status_tus PERSON_NAME PERSON_AGE PERSON_SEX 
 levelsof supervisor, local(sups)
 
 foreach s of local sups {
     export excel using "${DIR_DATA_433FM_YQ}/supervisors.xlsx" ///
         if supervisor == "`s'", ///
-        sheet("`s'") ///
+        sheet("Sup`s'") ///
         firstrow(variables) ///
         sheetreplace
 }
