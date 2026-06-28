@@ -24,7 +24,7 @@ st.title("HIES and TUS Progress")
 print(datetime.now())
 
 
-fixed_time = datetime(2026,6,28 ,10,25,54)
+fixed_time = datetime(2026,6,28 ,12,54,00)
 
 st.markdown(
     f"***Last updated on: 📅 {fixed_time.strftime('%A, %d %B %Y %H:%M:%S')}***"
@@ -74,6 +74,9 @@ def data_upload():
     df_island = df_island[
         ["QUARTER", "ISLAND", "COMPLETED HHs", "COMPLETED TUS", "COMPLETED LQs", "TARGET",  "COMPLETION_RATE"]
     ]
+
+    df_island["ISLAND"] = df_island["ISLAND"].str.strip()
+    df_island = df_island.sort_values("ISLAND", ascending=True).reset_index(drop=True)
 
     #---------------------------------------#
     # PSU / blocks
@@ -145,7 +148,7 @@ if selected_quarters:
     df_island = df_island_og[
         df_island_og["QUARTER"].isin(selected_quarters)
     ].drop(columns="QUARTER").groupby("ISLAND", as_index=False, observed=True).sum(numeric_only=True)
-    
+
     df_island["COMPLETION_RATE"] = ((df_island["COMPLETED HHs"] + df_island["COMPLETED LQs"] ) / df_island["TARGET"]) * 100
     df_psu = df_psu_og[
         df_psu_og["QUARTER"].isin(selected_quarters)
@@ -187,10 +190,25 @@ col2.metric("COMPLETED TUS", f"{total_tus:.0f}")
 col4.metric("TUS COMPLETION RATE", f"{completion_tus:.0f}%")
 
 # ---- ISLAND SUMMARY ----
+
 st.header("Island Summary")
+is_search_text = st.text_input(
+    "Filter island table",
+    placeholder="Type to filter......"
+)
+
+df_island_filtered = df_island.copy()
+if is_search_text:
+    mask = df_island_filtered.astype(str).apply(
+        lambda row: row.str.contains(is_search_text, case=False, na=False).any(),
+        axis=1
+    )
+    df_island_filtered = df_island_filtered[mask]
+
+print(df_island_filtered)
 
 island_event = st.dataframe(
-    df_island,
+    df_island_filtered,
     column_config={
         "COMPLETION_RATE": st.column_config.ProgressColumn(
             "COMPLETION",

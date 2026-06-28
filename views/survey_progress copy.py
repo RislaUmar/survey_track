@@ -4,7 +4,7 @@ from st_aggrid.grid_options_builder import GridOptionsBuilder
 from st_aggrid.shared import JsCode
 import pandas as pd
 from io import BytesIO
-
+from datetime import datetime
 # ---- PAGE SETUP ----
 st.set_page_config(page_title="HIES and TUS Progress", layout="wide")
 
@@ -21,6 +21,14 @@ tus = "data/tus.dta"
 # TITLE
 st.title("HIES and TUS Progress")
 
+print(datetime.now())
+
+
+fixed_time = datetime(2026,6,28 ,10,25,54)
+
+st.markdown(
+    f"***Last updated on: 📅 {fixed_time.strftime('%A, %d %B %Y %H:%M:%S')}***"
+)
 # SIDEBAR FILTERS
 # QUARTERS
 st.sidebar.header("Quarter Filter")
@@ -46,19 +54,30 @@ def data_upload():
     df_psu = pd.read_stata(psu_data)
     df_sample = pd.read_stata(all_samples)
 
+    
+    #---------------------------------------#
     # rename and subset columns
+    #---------------------------------------#
+
+    #---------------------------------------#
+    # ISLAND
+    #---------------------------------------#
     df_island = df_island.rename(columns={
         "GHI_ISLAND_CODE": "ISLAND",
         "completed_HH": "COMPLETED HHs",
+        "TUS_STATUS": "COMPLETED TUS",
         "completed_LQ": "COMPLETED LQs",
         "target": "TARGET",
         "completion_rate": "COMPLETION_RATE",
     })
 
     df_island = df_island[
-        ["QUARTER", "ISLAND", "COMPLETED HHs", "COMPLETED LQs", "TARGET", "COMPLETION_RATE"]
+        ["QUARTER", "ISLAND", "COMPLETED HHs", "COMPLETED TUS", "COMPLETED LQs", "TARGET",  "COMPLETION_RATE"]
     ]
 
+    #---------------------------------------#
+    # PSU / blocks
+    #---------------------------------------#
     df_psu = df_psu.rename(columns={
         "GHI_ISLAND_CODE": "ISLAND",
         "completed_HH": "COMPLETED HHs",
@@ -75,17 +94,22 @@ def data_upload():
     df_psu = df_psu[
         [
             "QUARTER", "ISLAND", "BLOCKS", "COMPLETED HHs", "COMPLETED LQs", "TARGET",
-            "COMPLETION_RATE", "TUS_MISSING", "INTERVIEWED LQ INDIVIDUALS",
-            "INTERVIEWERS", "SUP"
+            "COMPLETION_RATE", "TUS_STATUS", "TUS_MISSING", "INTERVIEWED LQ INDIVIDUALS",
+            "TAB", "SUP"
         ]
     ]
 
+    #---------------------------------------#
+    # SAMPLE
+    #---------------------------------------#
     df_sample = df_sample.rename(columns={
         "GHI_ISLAND_CODE": "ISLAND",
         "block": "BLOCKS",
         "nbslct": "SELECTED INDIVIDUALS",
         "total_ind_finished": "INTERVIEWED LQ INDIVIDUALS",
         "completed_LQ": "LQ_STATUS",
+        "completed_LQ_ind": "COMPLETED_LQ_ind",
+        "completed_LQ_listing": "COMPLETED_LQ_listing",
         "file1_status": "FILE1_STATUS",
         "file2_status": "FILE2_STATUS",
         "status_tus": "TUS_STATUS", 
@@ -96,81 +120,25 @@ def data_upload():
         "PERSON_SEX":"TUS_PERSON_SEX"
     })
     
-    df_sample["LQ_STATUS"] = df_sample["LQ_STATUS"].map({1: "Complete", 0: "Incomplete"}).fillna(df_sample["LQ_STATUS"])
     df_sample = df_sample.sort_values(by="LQ_ID")
-    df_sample = df_sample[["QUARTER", "ISLAND", "BLOCKS",
-                           "HOUSEHOLD_HD_ID", "HOUSEHOLD_KEY", "LQ_ID",
-                           "FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS", "LQ_STATUS",
+    df_sample = df_sample[["QUARTER", "ISLAND", "BLOCKS", "SELECTION",
+                           "HOUSEHOLD_HD_ID", "HOUSEHOLD_KEY", 
+                           "FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS", 
+                        #    "LQ_STATUS",
+                           "LQ_ID","COMPLETED_LQ_ind","COMPLETED_LQ_listing",
                            "TUS_PERSON_NAME", "TUS_PERSON_AGE", "TUS_PERSON_SEX",
                            "SELECTED INDIVIDUALS", "INTERVIEWED LQ INDIVIDUALS", 
                            "INTERVIEWERS", "SUP"]]
     
-    df_lq = pd.read_stata(lq_ind_status)
-    
-    df_lq = df_lq.rename(columns={
-        "obs1": "Complete",
-        "obs2": "Partially complete (refused)",
-        "obs3": "Partially complete (unavailable)",
-        "obs4": "Unable to identify household",
-        "obs5": "Long term unavailable",
-        "obs6": "Refused",
-        "obs7": "Not used",
-        "obs97": "Status Pending",
-        "obs96": "No, Unable to interview due to language",
-        "block": "BLOCKS",
-    })
-    
-    df_f1 = pd.read_stata(file1)
-    df_f1 = df_f1.rename(columns={
-        "obs1": "Complete",
-        "obs2": "Partially complete (refused)",
-        "obs3": "Partially complete (unavailable)",
-        "obs4": "Unable to identify household",
-        "obs5": "Long term unavailable",
-        "obs6": "Refused",
-        "obs7": "Not used",
-        "obs8":  "Labour quarter with 10 or more inhabitants, no interview",
-        "obs97": "Status Pending",
-        "block": "BLOCKS",
-    })
-    
-    df_f2 = pd.read_stata(file2)
-    df_f2 = df_f2.rename(columns={
-        "obs1": "Complete",
-        "obs2": "Partially complete (refused)",
-        "obs3": "Partially complete (unavailable)",
-        "obs4": "Unable to identify household",
-        "obs5": "Long term unavailable",
-        "obs6": "Refused",
-        "obs7": "Not used",
-        "obs8":  "Labour quarter with 10 or more inhabitants, no interview",
-        "obs97": "Status Pending",
-        "block": "BLOCKS",
-    })
-    df_tus = pd.read_stata(tus)
-    df_tus = df_tus.rename(columns={
-        "obs1": "Complete",
-        "obs93": "Individual Refused",
-        "obs94": "Individual Unavailable",
-        "obs95": "Invalid",
-        "obs96":  "In Progress",
-        "obs97": "Status Pending",
-        "block": "BLOCKS",
-    })
 
-
-    return df_island, df_psu, df_sample, df_lq, df_f1, df_f2, df_tus
+    return df_island, df_psu, df_sample
 
 # read data
-df_island_og, df_psu_og , df_sample_og, df_lq_og, df_f1_og, df_f2_og, df_tus_og = data_upload()
+df_island_og, df_psu_og , df_sample_og = data_upload()
 
 df_island = df_island_og.copy()
 df_psu = df_psu_og.copy()
 df_sample = df_sample_og.copy()
-df_lq = df_lq_og.copy()
-df_f1 = df_f1_og.copy()
-df_f2 = df_f2_og.copy()
-df_tus = df_tus_og.copy()
 
 
 if selected_quarters:
@@ -185,41 +153,38 @@ if selected_quarters:
     
     df_sample = df_sample_og[
         df_sample_og["QUARTER"].isin(selected_quarters)
-    ].sort_values(by=["QUARTER", "LQ_ID"])
+    ].sort_values(by=["QUARTER", "SELECTION", "FILE1_STATUS", "LQ_ID"])
     
-    df_lq = df_lq_og[
-        df_lq_og["QUARTER"].isin(selected_quarters)
-    ].sort_values(by="QUARTER")
-
-    df_f1 = df_f1_og[
-        df_f1_og["QUARTER"].isin(selected_quarters)
-    ].sort_values(by="QUARTER")
-
-    df_f2 = df_f2_og[
-        df_f2_og["QUARTER"].isin(selected_quarters)
-    ].sort_values(by="QUARTER")
-
-    df_tus = df_tus_og[
-        df_tus_og["QUARTER"].isin(selected_quarters)
-    ].sort_values(by="QUARTER")
 
 def get_totals(df_i, df_p):
-    target = len(df_p["BLOCKS"].unique()) * 16
+    target = df_i["TARGET"].sum()
     total_hh = df_i["COMPLETED HHs"].sum()
     total_lq = df_i["COMPLETED LQs"].sum()
-
+    total_tus = df_i["COMPLETED TUS"].sum()
     total = total_hh + total_lq
 
     completion = (total / target) * 100 
-    return target, total_hh , total_lq, completion
+    completion_tus = (total_tus / total_hh) * 100 
+    return target, total_hh , total_lq, completion, total_tus, completion_tus
 
-target, total_hh , total_lq, completion = get_totals(df_island, df_psu)
+subheader = "All Quarters"
+if len(selected_quarters) != 2:
+    subheader = ",".join(selected_quarters)
+    subheader = "Quarter " + subheader 
+
+
+st.subheader(f"Summary for {subheader}")
+target, total_hh , total_lq, completion, total_tus, completion_tus = get_totals(df_island, df_psu)
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("TARGET", f"{target:,.0f}")
 col2.metric("COMPLETED HHs", f"{total_hh:,.0f}")
 col3.metric("COMPLETED LQs", f"{total_lq:,.0f}")
-col4.metric("COMPLETION RATE", f"{completion:.0f}%")
+col4.metric("HIES COMPLETION RATE", f"{completion:.0f}%")
+
+col1, col2, col3, col4 = st.columns(4)
+col2.metric("COMPLETED TUS", f"{total_tus:.0f}")
+col4.metric("TUS COMPLETION RATE", f"{completion_tus:.0f}%")
 
 # ---- ISLAND SUMMARY ----
 st.header("Island Summary")
@@ -243,7 +208,7 @@ island_event = st.dataframe(
 )
 
 selected_rows = island_event.selection.rows
-
+    
 def download(df, name, label):
 
     output = BytesIO()
@@ -261,15 +226,16 @@ def download(df, name, label):
     )
 
 def color(row, files, comp_status, styles, name):
-    
     if (files == comp_status[0]):
         tus_idx = row.index.get_loc(name)
         styles[tus_idx] = "background-color: lightgreen; color: black; font-weight: 600;"
     elif (files in comp_status[1:]):
         tus_idx = row.index.get_loc(name)
         styles[tus_idx] = "background-color: #FFD580; color: black; font-weight: 600;"
-    elif files != "nan":
-        print(files)
+    elif (files == "Status Pending"):
+        tus_idx = row.index.get_loc(name)
+        styles[tus_idx] = "background-color: black; color: white; font-weight: 600;"
+    elif str(files) != "nan":
         tus_idx = row.index.get_loc(name)
         styles[tus_idx] = "background-color: #ffb09c; color: black; font-weight: 600;"
 
@@ -286,12 +252,21 @@ def color_tus_if_less(row, flag=False):
             file1 = str(row["FILE1_STATUS"]).strip()
             file2 = str(row["FILE2_STATUS"]).strip()
             tus = str(row["TUS_STATUS"]).strip()
-            lq_status  = str(row["LQ_STATUS"]).strip()
+            # lq_status  = str(row["LQ_STATUS"]).strip()
+            lq_status_inds  = row["COMPLETED_LQ_ind"]
+            lq_status_listing = str(row["COMPLETED_LQ_listing"]).strip()
+
             comp_status = ["Complete", "Partially complete (refused)", "Partially complete (unavailable)"]
-            
+
             color(row, file1, comp_status, styles, "FILE1_STATUS")
             color(row, file2, comp_status, styles, "FILE2_STATUS")
-            color(row, lq_status, comp_status, styles, "LQ_STATUS")
+            # color(row, lq_status, comp_status, styles, "LQ_STATUS")
+            color(row, tus, comp_status, styles, "TUS_STATUS")
+            color(row, lq_status_listing, comp_status, styles, "COMPLETED_LQ_listing")
+
+            comp_status = [0]
+            color(row, lq_status_inds, comp_status, styles, "COMPLETED_LQ_ind")
+            
             
     except:
         pass
@@ -300,7 +275,7 @@ def color_tus_if_less(row, flag=False):
 
 if selected_rows:
     islands = df_island.iloc[selected_rows]["ISLAND"].tolist()
-
+    print(islands)
     st.sidebar.header("Supervisor Filter")
     supervisors = [
         "HIES_SUP_01",
@@ -309,15 +284,35 @@ if selected_rows:
         "HIES_SUP_04",
         "HIES_SUP_05",
         "HIES_SUP_06",
+        "HIES_SUP_07",
+        "HIES_SUP_08",
+        "HIES_SUP_09",
+        "HIES_SUP_10",
+        "HIES_SUP_11"
     ]
+    
+    supervisors_dict = {
+        "HIES_SUP_01 - Nooh" : "HIES_SUP_01",
+        "HIES_SUP_02 - Mary" : "HIES_SUP_02",
+        "HIES_SUP_03 - Khalaf" : "HIES_SUP_03",
+        "HIES_SUP_04 - Aroo" : "HIES_SUP_04",
+        "HIES_SUP_05 - Habeeb" : "HIES_SUP_05",
+        "HIES_SUP_06 - Mibu" : "HIES_SUP_06",        
+        "HIES_SUP_07 - Ashham": "HIES_SUP_07",
+        "HIES_SUP_08 - Rayan" : "HIES_SUP_08",
+        "HIES_SUP_09 - Shaz" : "HIES_SUP_09",
+        "HIES_SUP_10 - Adhila" : "HIES_SUP_10",
+        "HIES_SUP_11 - Saaiga" : "HIES_SUP_11"
+    }
+
     selected_sups = []
 
-    for sup in supervisors:
+    for sup in supervisors_dict.keys():
 
         checked = st.sidebar.checkbox(sup, value=True, key=sup)
 
         if checked:
-            selected_sups.append(sup)
+            selected_sups.append(supervisors_dict[sup])
 
     if selected_sups:
         df_psu = df_psu[df_psu["SUP"].isin(selected_sups)]
@@ -333,33 +328,40 @@ if selected_rows:
             )
             return df
         
-        df_lq = df_filter(df_lq, to_filter)
-        df_f1 = df_filter(df_f1, to_filter)
-        df_f2 = df_filter(df_f2, to_filter)
-        df_tus = df_filter(df_tus, to_filter)
         df_sample = df_filter(df_sample, to_filter)
         
     
 
     df_filtered = df_psu[df_psu["ISLAND"].isin(islands)].copy()
     df_filtered = df_filtered.drop(columns=["ISLAND"])
-
     st.header("Progress by Blocks")
 
     main_cols = ["BLOCKS", "QUARTER", "COMPLETED HHs", "COMPLETED LQs", "TARGET", "COMPLETION_RATE"]
     optional_cols = [
         # "FILE1_STATUS",
         # "FILE2_STATUS",
-        # "TUS_STATUS",
         "TUS_MISSING",
+        # "TUS_STATUS",
         "INTERVIEWED LQ INDIVIDUALS",
-        "INTERVIEWERS",
+        "TAB",
         "SUP"
     ]
 
     df_psu_display = df_filtered[main_cols + optional_cols].copy()
+    search_text = st.text_input(
+            "Filter block table",
+            placeholder="Type to filter......"
+        )
 
-    styled_df = df_psu_display.style.apply(color_tus_if_less, flag=True,  axis=1)
+    df_psu_display_view = df_psu_display.copy()
+    if search_text:
+        mask = df_psu_display_view.astype(str).apply(
+            lambda row: row.str.contains(search_text, case=False, na=False).any(),
+            axis=1
+        )
+        df_psu_display_view = df_psu_display_view[mask]
+    
+    styled_df = df_psu_display_view.style.apply(color_tus_if_less, flag=True,  axis=1)
     
     blocks_event = st.dataframe(
         styled_df,
@@ -381,6 +383,8 @@ if selected_rows:
 
             # "FILE1_STATUS": st.column_config.NumberColumn(format="%d"),
             # "FILE2_STATUS": st.column_config.NumberColumn(format="%d"),
+            # "TUS_STATUS": st.column_config.NumberColumn(format="%d"),
+            
             "TUS_MISSING": st.column_config.NumberColumn(format="%d"),
             
             "INTERVIEWED LQ INDIVIDUALS": st.column_config.NumberColumn(
@@ -395,27 +399,69 @@ if selected_rows:
         selection_mode="single-row",
     )
     
-    download(styled_df, "Block Progress", "Download Block ProgressTable")
-    st.info("🔴 Red TUS cells = TUS form does not match HIES forms. Select a block to view details.")
+    # download(styled_df, "Block Progress", "Download Block ProgressTable")
+    # st.info("🔴 Red TUS cells = TUS form does not match HIES forms. Select a block to view details.")
 
     selected_block_rows = blocks_event.selection.rows
-    if selected_block_rows:
-        blocks = df_psu_display.iloc[selected_block_rows]["BLOCKS"].tolist()
-
+    if selected_block_rows:        
+        
+        blocks = df_psu_display_view.iloc[selected_block_rows]["BLOCKS"].tolist()
+        # print(blocks)
         df_filtered_all = df_sample[df_sample["BLOCKS"].isin(blocks)].copy()
 
         st.subheader(f"Sample detail for Block : {blocks[0]}")
+        search_text = st.text_input(
+            "Filter sample table",
+            placeholder="Type to filter......"
+        )
 
-        styled_sample =  df_filtered_all.style.apply(color_tus_if_less,  axis=1)
+        df_filtered_all_view = df_filtered_all.copy()
+        if search_text:
+            mask = df_filtered_all_view.astype(str).apply(
+                lambda row: row.str.contains(search_text, case=False, na=False).any(),
+                axis=1
+            )
+            df_filtered_all_view = df_filtered_all_view[mask]
+        
+        # def get_col_width(series, min_px=80, max_px=400):
+        #     max_len = series.astype(str).map(len).max()
+        #     return min(max(max_len * 10, min_px), max_px)
+
+        # block_width = get_col_width(df_filtered_all_view["BLOCKS"])    
+        column_config = {}
+
+        for col in df_filtered_all_view.columns:
+
+            max_len = df_filtered_all_view[col].astype(str).map(len).max()
+
+            width = min(max(max_len * 10, 80), 400)
+
+            if width < 120:
+                size = "small"
+            elif width < 220:
+                size = "medium"
+            else:
+                size = "large"
+
+            column_config[col] = size
+        styled_sample =  df_filtered_all_view.style.apply(color_tus_if_less,  axis=1)
+
+        
         st.dataframe(
             styled_sample,
             column_config={
                 "TUS_PERSON_AGE": st.column_config.NumberColumn(format="%d"),
-                "LQ_ID": st.column_config.NumberColumn(format="%d")},
-                
+                "LQ_ID": st.column_config.TextColumn(width=column_config["LQ_ID"]),
+                "COMPLETED_LQ_ind": st.column_config.NumberColumn(format="%d"),
+                "SELECTED INDIVIDUALS": st.column_config.NumberColumn(format="%d"),
+                "INTERVIEWED LQ INDIVIDUALS": st.column_config.NumberColumn(format="%d")
+                },
+            # column_config=column_config,
+            use_container_width=True,
             hide_index=True
             )
         
 else:
     st.info("Select one or more islands to see Progress by Blocks.")
- 
+
+    
