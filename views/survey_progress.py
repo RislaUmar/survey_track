@@ -24,7 +24,7 @@ st.title("HIES and TUS Progress")
 print(datetime.now())
 
 
-fixed_time = datetime(2026,6,28 ,17,25,21)
+fixed_time = datetime(2026,6,28 ,18,18,21)
 
 st.markdown(
     f"***Last updated on: 📅 {fixed_time.strftime('%A, %d %B %Y %H:%M:%S')}***"
@@ -205,7 +205,6 @@ if is_search_text:
     )
     df_island_filtered = df_island_filtered[mask]
 
-print(df_island_filtered)
 
 island_event = st.dataframe(
     df_island_filtered,
@@ -293,7 +292,7 @@ def color_tus_if_less(row, flag=False):
 
 if selected_rows:
     islands = df_island.iloc[selected_rows]["ISLAND"].tolist()
-    print(islands)
+    
     st.sidebar.header("Supervisor Filter")
     supervisors = [
         "HIES_SUP_01",
