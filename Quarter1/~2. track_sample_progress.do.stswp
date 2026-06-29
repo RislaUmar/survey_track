@@ -107,7 +107,9 @@ rename gender_str PERSON_SEX
 
 * Regenerate the household key
 replace HOUSEHOLD_KEY = regexs(1) if regexm(HOUSEHOLD_HD_ID,"\((.*)\)")
+replace status = 999 if missing(status)
 
+label define status 999 "Received & NO STATUS" , add
 /*
 TUS but file not complete
 0442_3878_1_0019_0009_0001
@@ -223,8 +225,10 @@ label define lbl 97 "Status Pending" , add
 replace file1_status = 97 if missing(file1_status)
 replace file2_status = 97 if missing(file2_status)
 
-label define status 97 "Status Pending" 96 "In Progress" 95 "Invalid ID" 93 "Individual Refused" 94 "Individual Unavailable"  92 "Other", add
+// label define status 97 "Status Pending" 96 "In Progress" 95 "Invalid ID" 93 "Individual Refused" 94 "Individual Unavailable"  92 "Other" -99 "Received & NO STATUS" , add
+label define status 97 "Status Pending" , add
 // label values status_tus status
+
 
 order interviewers supervisor $IDENTIFYING
 order file1_status file2_status status_tus, last
@@ -364,6 +368,9 @@ order GHI_ISLAND_CODE PSU GHI_BLOCK_CODE block GHI_STRUCTURE DWELLING_ID SELECTI
 label define completed_LQ_lbl 1 "Complete" 0 "Incomplete"
 label values completed_LQ completed_LQ_lbl
 
+// label define status 97 "Status Pending" , add
+label define status 999 "Received & NO STATUS" , modify
+
 label define status 7 "Not used" , modify
 save "${DIR_DATA_433FM_YQ}/progress_all.dta" , replace
 
@@ -471,13 +478,14 @@ save "${DIR_DATA_433FM_YQ}/status.dta" , replace
 use "${DIR_DATA_433FM_YQ}/progress_all.dta" , clear
 
 keep if inlist(file1_status,1,2,3) & inlist(status_tus,97,96) & QUARTER == "2" & !inlist( GHI_ISLAND_CODE ,442,591)
-keep supervisor GHI_ISLAND_CODE PSU block HOUSEHOLD_KEY GHI_STRUCTURE PERSON_NAME PERSON_AGE PERSON_SEX
-order supervisor GHI_ISLAND_CODE PSU block HOUSEHOLD_KEY GHI_STRUCTURE PERSON_NAME PERSON_AGE PERSON_SEX
+keep supervisor  interviewers GHI_ISLAND_CODE PSU block HOUSEHOLD_KEY GHI_STRUCTURE PERSON_NAME PERSON_AGE PERSON_SEX
+order supervisor interviewers GHI_ISLAND_CODE PSU block HOUSEHOLD_KEY GHI_STRUCTURE PERSON_NAME PERSON_AGE PERSON_SEX
 // keep supervisor GHI_ISLAND_CODE PSU block GHI_STRUCTURE DWELLING_ID HOUSEHOLD_HD_ID file1_status file2_status status_tus PERSON_NAME PERSON_AGE PERSON_SEX 
 // order supervisor GHI_ISLAND_CODE PSU block GHI_STRUCTURE DWELLING_ID HOUSEHOLD_HD_ID file1_status file2_status status_tus PERSON_NAME PERSON_AGE PERSON_SEX 
 levelsof supervisor, local(sups)
 
 foreach s of local sups {
+	display 
     export excel using "${DIR_DATA_433FM_YQ}/supervisors.xlsx" ///
         if supervisor == "`s'", ///
         sheet("`s'") ///
