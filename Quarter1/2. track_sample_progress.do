@@ -485,7 +485,6 @@ order supervisor interviewers GHI_ISLAND_CODE PSU block HOUSEHOLD_KEY GHI_STRUCT
 levelsof supervisor, local(sups)
 
 foreach s of local sups {
-	display "`s'"
     export excel using "${DIR_DATA_433FM_YQ}/supervisors.xlsx" ///
         if supervisor == "`s'", ///
         sheet("`s'") ///
