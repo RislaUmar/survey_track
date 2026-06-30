@@ -54,6 +54,8 @@ foreach var of local months{
 	display "`HIES_FILE'"
 	if fileexists("`HIES_FILE'") {
 		use "`HIES_FILE'",clear
+		
+		replace status = 6 if inlist(interview__key, "74-81-46-00", "37-59-74-31", "36-47-06-47", "79-15-10-17")
 		append using `hies_files'
 		save `hies_files', replace
     }
