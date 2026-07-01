@@ -24,7 +24,7 @@ st.title("HIES and TUS Progress")
 print(datetime.now())
 
 
-fixed_time = datetime(2026,6,30 ,8, 52,00)
+fixed_time = datetime(2026,7,1 ,9, 55,00)
 
 st.markdown(
     f"***Last updated on: 📅 {fixed_time.strftime('%A, %d %B %Y %H:%M:%S')}***"
@@ -157,7 +157,6 @@ if selected_quarters:
     df_sample = df_sample_og[
         df_sample_og["QUARTER"].isin(selected_quarters)
     ].sort_values(by=["QUARTER", "SELECTION", "FILE1_STATUS", "LQ_ID"])
-    
 
 def get_totals(df_i, df_p):
     target = df_i["TARGET"].sum()
@@ -174,7 +173,6 @@ subheader = "All Quarters"
 if len(selected_quarters) != 2:
     subheader = ",".join(selected_quarters)
     subheader = "Quarter " + subheader 
-
 
 st.subheader(f"Summary for {subheader}")
 target, total_hh , total_lq, completion, total_tus, completion_tus = get_totals(df_island, df_psu)

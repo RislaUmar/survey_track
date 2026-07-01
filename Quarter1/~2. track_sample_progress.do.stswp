@@ -458,7 +458,7 @@ restore
 use "lq_file_individual_status.dta", clear
 merge m:1 LQ_ID using "${DIR_DATA_433FM_YQ}/progress_LQ.dta"
 // assert _merge == 3
-keep if inlist(_merge,2,3)
+keep if inlist(_merge == 3
 drop _merge
 
 gen obs = 1
