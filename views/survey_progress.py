@@ -24,7 +24,7 @@ st.title("HIES and TUS Progress")
 print(datetime.now())
 
 
-fixed_time = datetime(2026,7,12 ,11, 00,00)
+fixed_time = datetime(2026,7,15 ,8, 30,00)
 
 st.markdown(
     f"***Last updated on: 📅 {fixed_time.strftime('%A, %d %B %Y %H:%M:%S')}***"
@@ -35,6 +35,7 @@ st.sidebar.header("Quarter Filter")
 
 q1 = st.sidebar.checkbox("Quarter 1", value=True)
 q2 = st.sidebar.checkbox("Quarter 2", value=True)
+q3 = st.sidebar.checkbox("Quarter 3", value=True)
 
 selected_quarters = []
 
@@ -42,10 +43,13 @@ if q1:
     selected_quarters.append("1")
 if q2:
     selected_quarters.append("2")
+if q3:
+    selected_quarters.append("3")
 
 if not q1 and not q2:
     selected_quarters.append("1")
     selected_quarters.append("2")
+    selected_quarters.append("3")
 
 # Load data
 @st.cache_data
@@ -54,7 +58,7 @@ def data_upload():
     df_psu = pd.read_stata(psu_data)
     df_sample = pd.read_stata(all_samples)
 
-    
+      
     #---------------------------------------#
     # rename and subset columns
     #---------------------------------------#
