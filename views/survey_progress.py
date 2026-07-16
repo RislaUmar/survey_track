@@ -24,7 +24,7 @@ st.title("HIES and TUS Progress")
 print(datetime.now())
 
 
-fixed_time = datetime(2026,7,15 ,8, 30,00)
+fixed_time = datetime(2026,7,16 ,10, 00,00)
 
 st.markdown(
     f"***Last updated on: 📅 {fixed_time.strftime('%A, %d %B %Y %H:%M:%S')}***"
@@ -46,7 +46,7 @@ if q2:
 if q3:
     selected_quarters.append("3")
 
-if not q1 and not q2:
+if not (q1 or q2 or q3):
     selected_quarters.append("1")
     selected_quarters.append("2")
     selected_quarters.append("3")
@@ -174,7 +174,7 @@ def get_totals(df_i, df_p):
     return target, total_hh , total_lq, completion, total_tus, completion_tus
 
 subheader = "All Quarters"
-if len(selected_quarters) != 2:
+if len(selected_quarters) != 3:
     subheader = ",".join(selected_quarters)
     subheader = "Quarter " + subheader 
 
@@ -217,8 +217,7 @@ island_event = st.dataframe(
             max_value=100,
             format="%d%%",
             width="medium",
-            color="#4aac04da"
-        )
+            color="#4aac04da")
     },
     hide_index=True,
     use_container_width=True,
