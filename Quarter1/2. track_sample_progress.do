@@ -11,6 +11,7 @@ local quarter_num 3
 * Load google sheet and get teams sheet
 local GOOGLE_SHEET_ID "1-Ym7pDg2e8FbDLFhSKSS3UeePYSN06AKII7OirSmIHM"
 local DATA "${DIR_DATA_433FM_YQ}hies_progress2025.xlsx"
+
 copy "https://docs.google.com/spreadsheets/d/`GOOGLE_SHEET_ID'/export?format=xlsx" ///
      "`DATA'", replace
 
