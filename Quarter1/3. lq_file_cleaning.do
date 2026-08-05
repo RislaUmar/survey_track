@@ -41,7 +41,7 @@ gen finished = indsta==1
 save "lq_file_individual_status.dta", replace
 
 // count number of finished interview per LQ
-bysort LQ_ID: egen total_ind_finished = total(finished)
+bysort LQ_ID: egen total_ind_finished = sum(finished)
 keep GHI_STRUCTURE DWELLING_ID LQ_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_CODE nbslct total_ind_finished status
 rename status completed_LQ_listing
 
