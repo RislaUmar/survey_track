@@ -37,12 +37,14 @@ foreach var of local months{
 	display "`sample_file'"
 	if fileexists("`sample_file'") {
 		use "`sample_file'", clear
+
 // 		tostring New_ID, replace
 		if `var' == 1 {
 			keep if QUARTER == "$QUARTER"
 		}
 		replace QUARTER = "$QUARTER"
 		
+		gen HOUSEHOLD_KEY = regexs(1) if regexm(HOUSEHOLD_HD_ID, "\(([0-9]{4}_[0-9]{4}_[0-9]_[0-9]{4}_[0-9]{4}_[0-9]{4})\)")
 		replace lq_id = "1" if missing(lq_id) & HOUSEHOLD_HD_ID == "Naseeribrahim (1004_3463_1_0012_0001_0001)"
 		append using `sample_data'
 		save `sample_data', replace
@@ -100,6 +102,7 @@ foreach var of local months{
 }
 
 global FIELD_MONT "\\fileserver\ICT&DM\DPDM\HIES\HIES2025\HIES_GSBPM\DATA\433_FIELDWORK_MONITORING"
+
 * save to a FIELD_MONITORING directory
 use `sample_data', clear
 save "${FIELD_MONT}\sample_data.dta", replace
@@ -127,7 +130,7 @@ run "H:\HIES_GSBPM\PROG\000_MASTER\000_Master_quarterly_processing.do"
 global FIELD_MONT "\\fileserver\ICT&DM\DPDM\HIES\HIES2025\HIES_GSBPM\DATA\433_FIELDWORK_MONITORING"
 
 * TUS DIR
-global TUS_DIR "\\fileserver\ICT&DM\DPDM\HIES\HIES2025\TUS\TUS Data\DATA\2. CLEANED DATA\"
+global TUS_DIR "\\192.168.1.8\ICT&DM\DPDM\HIES\HIES2025\TUS\TUS Data\DATA\2. CLEANED DATA\"
 
 global TUS_FILE "${TUS_DIR}\1. TimeUse-TIMEUSE_IDENTIFIER.dta"
 

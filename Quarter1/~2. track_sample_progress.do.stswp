@@ -378,6 +378,8 @@ label define status 999 "Received & NO STATUS" , modify
 label define status 7 "Not used" , modify
 label define status 8 "Labour quarter with 10 or more inhabitants, no interview" , modify
 
+label define status 97 "Status Pending" , modify
+
 save "${DIR_DATA_433FM_YQ}/progress_all.dta" , replace
 
 

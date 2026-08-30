@@ -1,6 +1,7 @@
 /******************************************************************
  3. LQ DATA
 ******************************************************************/
+/*
 // main file edits
 tempfile lq_main_file
 use  "${LQ_main_form}", clear
@@ -48,8 +49,28 @@ rename status completed_LQ_listing
 bysort LQ_ID : keep if _n==1
 
 gen completed_LQ_ind = nbslct - total_ind_finished
-gen completed_LQ = (completed_LQ_ind==0) & completed_LQ_listing
+gen completed_LQ =  completed_LQ_listing
 
 
+assert nbslct >= total_ind_finished
+save "lq_file_cleaned.dta", replace
+*/
+
+use  "${LQ_person_listing_merged}" , clear
+// count of finished
+gen finished = indsta==1
+save "lq_file_individual_status.dta", replace
+
+duplicates drop LQ_ID ind__id , force
+
+// count number of finished interview per LQ
+bysort LQ_ID: egen total_ind_finished = sum(finished)
+keep GHI_STRUCTURE DWELLING_ID LQ_ID SELECTION PSU GHI_ISLAND_CODE GHI_BLOCK_CODE nbslct total_ind_finished status
+rename status completed_LQ_listing
+
+bysort LQ_ID : keep if _n==1
+
+gen completed_LQ_ind = nbslct - total_ind_finished
+gen completed_LQ =  completed_LQ_listing & (completed_LQ )
 assert nbslct >= total_ind_finished
 save "lq_file_cleaned.dta", replace
