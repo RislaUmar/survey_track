@@ -24,7 +24,7 @@ st.title("HIES and TUS Progress")
 print(datetime.now())
 
 
-fixed_time = datetime(2026,9,1 ,17, 20,00)
+fixed_time = datetime(2026,9,2 ,15, 20,00)
 
 st.markdown(
     f"***Last updated on: 📅 {fixed_time.strftime('%A, %d %B %Y %H:%M:%S')}***"
