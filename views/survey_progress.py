@@ -24,7 +24,7 @@ st.title("HIES and TUS Progress")
 print(datetime.now())
 
 
-fixed_time = datetime(2026,9,2 ,15, 20,00)
+fixed_time = datetime(2026,9,9 ,14, 19,00)
 
 st.markdown(
     f"***Last updated on: 📅 {fixed_time.strftime('%A, %d %B %Y %H:%M:%S')}***"
@@ -147,6 +147,7 @@ df_island = df_island_og.copy()
 df_psu = df_psu_og.copy()
 df_sample = df_sample_og.copy()
 
+print(df_psu[df_psu["ISLAND"] == "AA.Thoddoo"])
 
 if selected_quarters:
     df_island = df_island_og[
@@ -226,7 +227,7 @@ island_event = st.dataframe(
 )
 
 selected_rows = island_event.selection.rows
-    
+
 def download(df, name, label):
 
     output = BytesIO()
@@ -293,7 +294,7 @@ def color_tus_if_less(row, flag=False):
 
 if selected_rows:
     islands = df_island.iloc[selected_rows]["ISLAND"].tolist()
-    
+
     st.sidebar.header("Supervisor Filter")
     supervisors = [
         "HIES_SUP_01",
@@ -320,7 +321,8 @@ if selected_rows:
         "HIES_SUP_08 - Rayan" : "HIES_SUP_08",
         "HIES_SUP_09 - Shaz" : "HIES_SUP_09",
         "HIES_SUP_10 - Adhila" : "HIES_SUP_10",
-        "HIES_SUP_11 - Saaiga" : "HIES_SUP_11"
+        "HIES_SUP_11 - Saaiga" : "HIES_SUP_11",
+        "HIES_SUP_13 - Ishran" : "HIES_SUP_13"
     }
 
     selected_sups = []
@@ -348,10 +350,12 @@ if selected_rows:
         
         df_sample = df_filter(df_sample, to_filter)
         
-    
 
+    print(df_psu[df_psu["ISLAND"] == "AA.Thoddoo"])
     df_filtered = df_psu[df_psu["ISLAND"].isin(islands)].copy()
+    print(df_filtered)
     df_filtered = df_filtered.drop(columns=["ISLAND"])
+
     st.header("Progress by Blocks")
 
     main_cols = ["BLOCKS", "QUARTER", "COMPLETED HHs", "COMPLETED LQs", "TARGET", "COMPLETION_RATE"]
