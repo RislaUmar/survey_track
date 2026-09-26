@@ -24,7 +24,7 @@ st.title("HIES and TUS Progress")
 print(datetime.now())
 
 
-fixed_time = datetime(2026,9,10 ,8, 19,00)
+fixed_time = datetime(2026,9,26 ,18, 40,00)
 
 st.markdown(
     f"***Last updated on: 📅 {fixed_time.strftime('%A, %d %B %Y %H:%M:%S')}***"
@@ -308,6 +308,9 @@ if selected_rows:
         "HIES_SUP_09",
         "HIES_SUP_10",
         "HIES_SUP_11"
+        "HIES_SUP_12"
+        "HIES_SUP_13"
+        "HIES_SUP_14"
     ]
     
     supervisors_dict = {
@@ -322,7 +325,9 @@ if selected_rows:
         "HIES_SUP_09 - Shaz" : "HIES_SUP_09",
         "HIES_SUP_10 - Adhila" : "HIES_SUP_10",
         "HIES_SUP_11 - Saaiga" : "HIES_SUP_11",
-        "HIES_SUP_13 - Ishran" : "HIES_SUP_13"
+        "HIES_SUP_12 - Ahyan" : "HIES_SUP_12",
+        "HIES_SUP_13 - Ishran" : "HIES_SUP_13",
+        "HIES_SUP_14 - Layan" : "HIES_SUP_14"
     }
 
     selected_sups = []

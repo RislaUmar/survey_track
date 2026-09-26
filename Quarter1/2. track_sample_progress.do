@@ -305,7 +305,7 @@ drop TU_PERSON_SEX TU_WDAY
 * see if completed or not
 gen FILE1_STATUS = inlist(file1_status,1,2,3)
 gen FILE2_STATUS = inlist(file2_status,1,2,3)
-gen TUS_STATUS = !inlist(status_tus,97,96)
+gen TUS_STATUS = inlist(status_tus, 1)
 gen TUS_MISSING = inlist(file1_status,1,2,3) & inlist(status_tus,97,96)
 
 *---------------------------------------*
