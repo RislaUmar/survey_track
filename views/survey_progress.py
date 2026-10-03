@@ -195,18 +195,18 @@ col4.metric("TUS COMPLETION RATE", f"{completion_tus:.0f}%")
 # ---- ISLAND SUMMARY ----
 
 st.header("Island Summary")
-is_search_text = st.text_input(
-    "Filter island table",
-    placeholder="Type to filter......"
-)
+# is_search_text = st.text_input(
+#     "Filter island table",
+#     placeholder="Type to filter......"
+# )
 
 df_island_filtered = df_island.copy()
-if is_search_text:
-    mask = df_island_filtered.astype(str).apply(
-        lambda row: row.str.contains(is_search_text, case=False, na=False).any(),
-        axis=1
-    )
-    df_island_filtered = df_island_filtered[mask]
+# if is_search_text:
+#     mask = df_island_filtered.astype(str).apply(
+#         lambda row: row.str.contains(is_search_text, case=False, na=False).any(),
+#         axis=1
+#     )
+#     df_island_filtered = df_island_filtered[mask]
 
 
 island_event = st.dataframe(
