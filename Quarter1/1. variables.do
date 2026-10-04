@@ -1,6 +1,6 @@
 * Define paths
 * ALL QUARTERS
-local months 1 4 7
+local months 1 4 7 10
 // local months 1
 
 * Declare tempfiles
