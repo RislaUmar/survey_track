@@ -24,18 +24,19 @@ st.title("HIES and TUS Progress")
 print(datetime.now())
 
 
-fixed_time = datetime(2026,10,3 , 10, 00 ,00)
+fixed_time = datetime(2026,10,4, 8, 30 ,00)
 
 st.markdown(
     f"***Last updated on: 📅 {fixed_time.strftime('%A, %d %B %Y %H:%M:%S')}***"
 )
+
 # SIDEBAR FILTERS
 # QUARTERS
 st.sidebar.header("Quarter Filter")
 
-q1 = st.sidebar.checkbox("Quarter 1", value=True)
-q2 = st.sidebar.checkbox("Quarter 2", value=True)
-q3 = st.sidebar.checkbox("Quarter 3", value=True)
+q1 = st.sidebar.checkbox("Quarter 1", value=False)
+q2 = st.sidebar.checkbox("Quarter 2", value=False)
+q3 = st.sidebar.checkbox("Quarter 3", value=False)
 
 selected_quarters = []
 
@@ -129,6 +130,7 @@ def data_upload():
     
     df_sample = df_sample.sort_values(by="LQ_ID")
     df_sample = df_sample[["QUARTER", "ISLAND", "BLOCKS", "SELECTION",
+                           "GHI_STRUCTURE",
                            "HOUSEHOLD_HD_ID", "HOUSEHOLD_KEY", 
                            "FILE1_STATUS", "FILE2_STATUS", "TUS_STATUS", 
                         #    "LQ_STATUS",
@@ -163,6 +165,68 @@ if selected_quarters:
         df_sample_og["QUARTER"].isin(selected_quarters)
     ].sort_values(by=["QUARTER", "SELECTION", "FILE1_STATUS", "LQ_ID"])
 
+st.sidebar.header("Supervisor Filter")
+supervisors = [
+    "HIES_SUP_01",
+    "HIES_SUP_02",
+    "HIES_SUP_03",
+    "HIES_SUP_04",
+    "HIES_SUP_05",
+    "HIES_SUP_06",
+    "HIES_SUP_07",
+    "HIES_SUP_08",
+    "HIES_SUP_09",
+    "HIES_SUP_10",
+    "HIES_SUP_11"
+    "HIES_SUP_12"
+    "HIES_SUP_13"
+    "HIES_SUP_14"
+]
+
+supervisors_dict = {
+    "HIES_SUP_01 - Nooh" : "HIES_SUP_01",
+    "HIES_SUP_02 - Mary" : "HIES_SUP_02",
+    "HIES_SUP_03 - Khalaf" : "HIES_SUP_03",
+    "HIES_SUP_04 - Aroo" : "HIES_SUP_04",
+    "HIES_SUP_05 - Habeeb" : "HIES_SUP_05",
+    "HIES_SUP_06 - Mibu" : "HIES_SUP_06",        
+    "HIES_SUP_07 - Ashham": "HIES_SUP_07",
+    "HIES_SUP_08 - Rayan" : "HIES_SUP_08",
+    "HIES_SUP_09 - Shaz" : "HIES_SUP_09",
+    "HIES_SUP_10 - Adhila" : "HIES_SUP_10",
+    "HIES_SUP_11 - Saaiga" : "HIES_SUP_11",
+    "HIES_SUP_12 - Ahyan" : "HIES_SUP_12",
+    "HIES_SUP_13 - Ishran" : "HIES_SUP_13",
+    "HIES_SUP_14 - Layan" : "HIES_SUP_14"
+}
+
+selected_sups = []
+
+for sup in supervisors_dict.keys():
+
+    checked = st.sidebar.checkbox(sup, value=False, key=sup)
+
+    if checked:
+        selected_sups.append(supervisors_dict[sup])
+
+if selected_sups:
+    df_psu = df_psu[df_psu["SUP"].isin(selected_sups)]
+    sup_islands = df_psu["ISLAND"].tolist()
+
+    to_filter = df_psu[["QUARTER", "BLOCKS"]]
+
+    def df_filter(df, main_df):
+
+        df = df.merge(
+            main_df[["BLOCKS", "QUARTER"]].drop_duplicates(),
+            on=["BLOCKS", "QUARTER"],
+            how="inner"
+        )
+        return df
+    
+    df_sample = df_filter(df_sample, to_filter)
+    df_island = df_island[df_island["ISLAND"].isin(sup_islands)]
+
 def get_totals(df_i, df_p):
     target = df_i["TARGET"].sum()
     total_hh = df_i["COMPLETED HHs"].sum()
@@ -195,18 +259,18 @@ col4.metric("TUS COMPLETION RATE", f"{completion_tus:.0f}%")
 # ---- ISLAND SUMMARY ----
 
 st.header("Island Summary")
-# is_search_text = st.text_input(
-#     "Filter island table",
-#     placeholder="Type to filter......"
-# )
+is_search_text = st.text_input(
+    "Filter island table",
+    placeholder="Type to filter......"
+)
 
 df_island_filtered = df_island.copy()
-# if is_search_text:
-#     mask = df_island_filtered.astype(str).apply(
-#         lambda row: row.str.contains(is_search_text, case=False, na=False).any(),
-#         axis=1
-#     )
-#     df_island_filtered = df_island_filtered[mask]
+if is_search_text:
+    mask = df_island_filtered.astype(str).apply(
+        lambda row: row.str.contains(is_search_text, case=False, na=False).any(),
+        axis=1
+    )
+    df_island_filtered = df_island_filtered[mask]
 
 
 island_event = st.dataframe(
@@ -294,71 +358,8 @@ def color_tus_if_less(row, flag=False):
 
 if selected_rows:
     islands = df_island.iloc[selected_rows]["ISLAND"].tolist()
-
-    st.sidebar.header("Supervisor Filter")
-    supervisors = [
-        "HIES_SUP_01",
-        "HIES_SUP_02",
-        "HIES_SUP_03",
-        "HIES_SUP_04",
-        "HIES_SUP_05",
-        "HIES_SUP_06",
-        "HIES_SUP_07",
-        "HIES_SUP_08",
-        "HIES_SUP_09",
-        "HIES_SUP_10",
-        "HIES_SUP_11"
-        "HIES_SUP_12"
-        "HIES_SUP_13"
-        "HIES_SUP_14"
-    ]
-    
-    supervisors_dict = {
-        "HIES_SUP_01 - Nooh" : "HIES_SUP_01",
-        "HIES_SUP_02 - Mary" : "HIES_SUP_02",
-        "HIES_SUP_03 - Khalaf" : "HIES_SUP_03",
-        "HIES_SUP_04 - Aroo" : "HIES_SUP_04",
-        "HIES_SUP_05 - Habeeb" : "HIES_SUP_05",
-        "HIES_SUP_06 - Mibu" : "HIES_SUP_06",        
-        "HIES_SUP_07 - Ashham": "HIES_SUP_07",
-        "HIES_SUP_08 - Rayan" : "HIES_SUP_08",
-        "HIES_SUP_09 - Shaz" : "HIES_SUP_09",
-        "HIES_SUP_10 - Adhila" : "HIES_SUP_10",
-        "HIES_SUP_11 - Saaiga" : "HIES_SUP_11",
-        "HIES_SUP_12 - Ahyan" : "HIES_SUP_12",
-        "HIES_SUP_13 - Ishran" : "HIES_SUP_13",
-        "HIES_SUP_14 - Layan" : "HIES_SUP_14"
-    }
-
-    selected_sups = []
-
-    for sup in supervisors_dict.keys():
-
-        checked = st.sidebar.checkbox(sup, value=True, key=sup)
-
-        if checked:
-            selected_sups.append(supervisors_dict[sup])
-
-    if selected_sups:
-        df_psu = df_psu[df_psu["SUP"].isin(selected_sups)]
-
-        to_filter = df_psu[["QUARTER", "BLOCKS"]]
-
-        def df_filter(df, main_df):
-
-            df = df.merge(
-                main_df[["BLOCKS", "QUARTER"]].drop_duplicates(),
-                on=["BLOCKS", "QUARTER"],
-                how="inner"
-            )
-            return df
         
-        df_sample = df_filter(df_sample, to_filter)
-        
-
-    print(df_psu[df_psu["ISLAND"] == "AA.Thoddoo"])
     df_filtered = df_psu[df_psu["ISLAND"].isin(islands)].copy()
-    print(df_filtered)
     df_filtered = df_filtered.drop(columns=["ISLAND"])
 
     st.header("Progress by Blocks")
@@ -450,11 +451,6 @@ if selected_rows:
             )
             df_filtered_all_view = df_filtered_all_view[mask]
         
-        # def get_col_width(series, min_px=80, max_px=400):
-        #     max_len = series.astype(str).map(len).max()
-        #     return min(max(max_len * 10, min_px), max_px)
-
-        # block_width = get_col_width(df_filtered_all_view["BLOCKS"])    
         column_config = {}
 
         for col in df_filtered_all_view.columns:
@@ -471,6 +467,8 @@ if selected_rows:
                 size = "large"
 
             column_config[col] = size
+
+        df_filtered_all_view = df_filtered_all_view.drop(columns=["QUARTER", "ISLAND"])
         styled_sample =  df_filtered_all_view.style.apply(color_tus_if_less,  axis=1)
 
         
