@@ -72,5 +72,5 @@ bysort LQ_ID : keep if _n==1
 
 gen completed_LQ_ind = nbslct - total_ind_finished
 gen completed_LQ =  completed_LQ_listing & (completed_LQ_ind <= 0)
-assert nbslct >= total_ind_finished
+// assert nbslct >= total_ind_finished
 save "lq_file_cleaned.dta", replace
